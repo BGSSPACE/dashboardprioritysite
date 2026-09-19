@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Performance — 10 City Campaign Report IRA</title>
+  <style>
+    :root {
+      --ira-red: #D2122E;
+      --ira-red-dark: #8E0E22;
+      --ira-red-light: #FBEEF0;
+      --ira-red-soft: rgba(210,18,46,0.06);
+      --gold: #B98B3E;
+      --gold-light: #F8F1E1;
+      --ink: #1F2024;
+      --ink-soft: #52535A;
+      --muted: #94959D;
+      --border: #EDEBEC;
+      --bg: #F5F3F5;
+      --white: #FFFFFF;
+      --shadow-sm: 0 1px 2px rgba(31,32,36,0.05);
+      --shadow-md: 0 8px 22px rgba(142,14,34,0.07);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --sidebar-w: 220px;
+    }
+    * { box-sizing: border-box; }
+    html {
+      height: 100%;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--ira-red-light); }
+
+    /* ---------- shell: sidebar + content ---------- */
+    .app-shell {
+      display: block;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      box-sizing: border-box;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      background: linear-gradient(180deg, var(--ira-red) 0%, var(--ira-red-dark) 100%);
+      box-shadow: 2px 0 14px rgba(27,51,80,0.14);
+      padding: 20px 12px;
+      z-index: 30;
+    }
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 2px 8px 18px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+    }
+    .sidebar-mark {
+      width: auto;
+      height: 54px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sidebar-mark img { height: 100%; width: auto; max-width: 64px; object-fit: contain; display: block; }
+    .sidebar-brand-text .sub { margin: 0; font-size: 13px; color: #fff; font-weight: 700; letter-spacing: 0.1px; line-height: 1.35; }
+    .sidebar-item {
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.78);
+      margin-bottom: 4px;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .sidebar-item.active { background: #fff; color: var(--ira-red-dark); font-weight: 700; }
+
+    .content {
+      margin-left: var(--sidebar-w);
+      max-width: 1220px;
+      padding: 20px 28px 70px;
+    }
+
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--ira-red-dark);
+      margin: 28px 0 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    h2:first-of-type { margin-top: 2px; }
+
+    /* ---------- filter bar ---------- */
+    .filters-bar {
+      position: sticky;
+      top: 18px;
+      z-index: 20;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; }
+    .filter-group label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .filter-group input {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--bg);
+      transition: border-color .15s;
+    }
+    .filter-group input:focus { outline: none; border-color: var(--ira-red); }
+    .preset-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .preset-btn, .reset-btn {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 7px 13px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .preset-btn:hover, .reset-btn:hover { border-color: var(--ira-red); color: var(--ira-red-dark); }
+    .preset-btn.active { background: var(--ira-red); border-color: var(--ira-red); color: var(--white); }
+    .reset-btn { color: var(--ira-red-dark); }
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--ira-red);
+      background: var(--ira-red);
+      color: #fff;
+      border-radius: 999px;
+      padding: 7px 15px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .download-btn:hover:not(:disabled) { background: var(--ira-red-dark); border-color: var(--ira-red-dark); }
+    .download-btn:disabled { opacity: 0.6; cursor: default; }
+    .last-updated { margin-left: auto; font-size: 11.5px; color: var(--muted); align-self: center; font-weight: 600; white-space: nowrap; }
+
+    /* ---------- loading / error ---------- */
+    #loading {
+      margin: 60px auto; text-align: center; color: var(--muted); font-size: 13.5px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .spinner {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 3px solid var(--ira-red-light); border-top-color: var(--ira-red);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #errorBox {
+      display: none; margin: 24px 0; color: var(--ira-red-dark);
+      background: var(--ira-red-light); border-radius: var(--radius-md); padding: 16px 20px; font-size: 13.5px;
+    }
+    #contentBody { display: none; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ---------- exec summary cards ---------- */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 16px;
+    }
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      border-top: 3px solid var(--ira-red);
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-card .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    .kpi-card .kpi-value { font-size: 22px; font-weight: 800; margin-top: 8px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .kpi-card .kpi-value.is-dash { color: #D9D8DC; }
+
+    /* mini version used inside channel cards */
+    .summary-grid.mini { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .summary-grid.mini .kpi-card { padding: 11px 13px; border-top-width: 2px; }
+    .summary-grid.mini .kpi-value { font-size: 15px; margin-top: 4px; }
+
+    /* ---------- channel cards ---------- */
+    .channel-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .channel-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    }
+    .channel-card-header .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .channel-card-header h3 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+
+    /* ---------- tables ---------- */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    thead th {
+      background: var(--ira-red-light);
+      color: var(--ira-red-dark);
+      text-align: left;
+      padding: 10px 13px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+    thead th.num { text-align: right; }
+    tbody td { padding: 10px 13px; border-top: 1px solid var(--border); white-space: nowrap; }
+    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tbody tr:nth-child(even) { background: #FCFBFC; }
+    tbody tr:hover { background: var(--ira-red-soft); }
+    tbody tr.total-row { background: var(--bg); font-weight: 700; }
+    tbody tr.total-row:hover { background: var(--bg); }
+    td .is-dash, .kpi-value.is-dash { color: #D9D8DC; }
+
+    /* ---------- rank badge (gradasi warna, tanpa emoji) ---------- */
+    .rank-cell { width: 34px; text-align: center; }
+    .rank-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 23px; height: 23px; border-radius: 50%;
+      font-size: 11px; font-weight: 700;
+    }
+    td.bar-num-cell .cell-value { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* ---------- semua kota: spotlight cards (compact) ---------- */
+    .spotlight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 6px;
+    }
+    .spotlight-card {
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      color: #fff;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .spotlight-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(160px 90px at 100% 0%, rgba(255,255,255,0.35), transparent 70%);
+      pointer-events: none;
+    }
+    .spotlight-card.spotlight-city { background: linear-gradient(135deg, var(--ira-red-dark) 0%, var(--ira-red) 60%, #fff 200%); }
+    .spotlight-card.spotlight-channel { background: linear-gradient(135deg, var(--ira-red) 0%, var(--ira-red-dark) 60%, #fff 200%); }
+    .spotlight-icon {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.28);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative; z-index: 1;
+    }
+    .spotlight-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
+    .spotlight-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; opacity: 0.82; }
+    .spotlight-value { font-size: 16px; font-weight: 800; margin-top: 3px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spotlight-value.spotlight-empty { font-size: 12.5px; font-weight: 600; font-style: italic; opacity: 0.75; }
+    .spotlight-sub { font-size: 11px; margin-top: 3px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ---------- semua kota: leaderboard channel ---------- */
+    .channel-leaderboard { display: flex; flex-direction: column; gap: 8px; }
+    .channel-rank-row {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 13px 16px; box-shadow: var(--shadow-sm);
+    }
+    .channel-rank-badge { width: 26px; flex-shrink: 0; text-align: center; }
+    .channel-rank-main { flex: 0 0 180px; min-width: 140px; }
+    .channel-rank-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
+    .channel-rank-name .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .channel-rank-stats {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .channel-rank-stat { text-align: right; min-width: 0; }
+    .channel-rank-stat .stat-label { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 700; }
+    .channel-rank-stat .stat-value { display: block; font-size: 14px; font-weight: 800; margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .channel-rank-stat .stat-value.is-dash { color: #D9D8DC; font-weight: 600; }
+
+    @media (max-width: 700px) {
+      .channel-rank-row { flex-wrap: wrap; }
+      .channel-rank-main { flex: 1 1 100%; }
+      .channel-rank-stats { width: 100%; grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .thumb {
+      width: 42px; height: 42px; border-radius: var(--radius-sm); object-fit: cover;
+      border: 1px solid var(--border); display: block;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .thumb:hover { transform: scale(1.15); box-shadow: var(--shadow-md); }
+    .no-asset { font-size: 12px; color: var(--muted); }
+    .asset-link-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 13px; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--ira-red-dark);
+      font-size: 11.5px; font-weight: 700;
+      text-decoration: none; white-space: nowrap;
+      transition: all .15s;
+    }
+    .asset-link-btn:hover { border-color: var(--ira-red); background: var(--ira-red-light); }
+    .notes-cell { max-width: 200px; white-space: normal; color: var(--muted); font-size: 12.5px; font-style: italic; }
+    .empty-state { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+
+    /* ---------- pagination ---------- */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 4px 0; font-size: 12px; color: var(--muted);
+    }
+    .page-btn {
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--ink-soft);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--ira-red); color: var(--ira-red-dark); }
+    .page-btn:disabled { opacity: 0.4; cursor: default; }
+    .page-info { font-weight: 600; }
+
+    @media (max-width: 860px) {
+      .sidebar {
+        width: 100%;
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        overflow-x: auto;
+        gap: 4px;
+        padding: 10px 12px;
+      }
+      .sidebar-brand { width: 100%; border-bottom: none; margin-bottom: 6px; padding-bottom: 6px; }
+      .sidebar-item { flex: 0 0 auto; margin-bottom: 0; }
+      .content { margin-left: 0; padding: 14px 14px 60px; }
+      .filters-bar { position: static; }
+      .last-updated { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Memuat data…</div>
+  </div>
+  <div id="errorBox"></div>
+
+  <div class="app-shell" id="appShell" style="display:none">
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-mark" id="topbarMark">
+          <img src="https://lh3.googleusercontent.com/d/1eCFLNqbXRC-xDy9HviUrfoGnszsXngX_=s200"
+               alt="Internet Rakyat" onerror="handleLogoError(this)">
+        </div>
+        <div class="sidebar-brand-text">
+          <p class="sub">Campaign 10 Kota — Internet Rakyat</p>
+        </div>
+      </div>
+      <div id="sidebarList"></div>
+    </div>
+
+    <div class="content">
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Dari Tanggal</label>
+          <input type="date" id="dateFrom">
+        </div>
+        <div class="filter-group">
+          <label>Sampai Tanggal</label>
+          <input type="date" id="dateTo">
+        </div>
+        <div class="preset-btns" id="presetBtns">
+          <button class="preset-btn" data-preset="all">Semua</button>
+          <button class="preset-btn" data-preset="7">7 Hari Terakhir</button>
+          <button class="preset-btn" data-preset="30">30 Hari Terakhir</button>
+          <button class="preset-btn" data-preset="month">Bulan Ini</button>
+        </div>
+        <button class="reset-btn" id="resetBtn">Reset Filter</button>
+        <button class="download-btn" id="downloadBtn" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+          Download Data
+        </button>
+        <div class="last-updated" id="lastUpdated"></div>
+      </div>
+
+      <div id="contentBody">
+        <h2 id="scopeTitleSummary">Executive Summary</h2>
+        <div class="summary-grid" id="mainExecSummary"></div>
+
+        <!-- Ditampilkan hanya saat "Semua Kota" dipilih -->
+        <div id="allCitiesView">
+          <div class="spotlight-grid" id="spotlightWrap"></div>
+
+          <h2>Ringkasan per Kota</h2>
+          <div id="cityBreakdownWrap"></div>
+
+          <h2>Ringkasan Performa Channel</h2>
+          <div id="channelRankingWrap"></div>
+        </div>
+
+        <!-- Ditampilkan hanya saat 1 kota spesifik dipilih -->
+        <div id="perCityView">
+          <h2 id="scopeTitleDetail">Detail per Channel</h2>
+          <div id="channelCardsWrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== KONFIGURASI KONEKSI (ISI DI SINI) ====================
+
+    // URL web app Apps Script (hasil Deploy, berakhiran /exec)
+    var API_URL = 'PASTE_URL_WEB_APP_EXEC_DI_SINI';
+
+    // Harus sama dengan API_KEY di Code.gs. Kosongkan kalau di Code.gs juga kosong.
+    var API_KEY = '';
+
+    // ==================== KONFIGURASI DARI SERVER ====================
+    // Diisi otomatis dari response ?action=data (satu sumber config: Code.gs)
+    var FUNNEL_METRICS = [];
+    var CHANNEL_METRIC_CONFIG = {};
+    var CHANNEL_DETAIL_COLUMNS = {};
+    var CITY_ORDER = [];
+    var EXEC_SUMMARY_DEFS = [];
+    var ROWS_PER_PAGE = 5;
+    var CHANNELS = [];
+
+    // key di object row (camelCase) <-> nama header sheet
+    var HEADER_TO_KEY = {
+      'Reach': 'reach', 'Impressions': 'impressions', 'Clicks': 'clicks', 'LPV': 'lpv',
+      'WA Inbound': 'waInbound', 'Registration Complete': 'registrationComplete',
+      'Potential': 'potential', 'Covered': 'covered', 'Payment': 'payment', 'Activation': 'activation'
+    };
+
+    // Kolom tabel "Detail per Channel" per channel — ditentukan di client,
+    // terlepas dari CHANNEL_DETAIL_COLUMNS bawaan server. Masing-masing
+    // channel punya kebutuhan tracking sendiri jadi kolomnya beda-beda.
+    var CHANNEL_TABLE_COLUMNS = {
+      'Meta Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'Tiktok Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'BB + Hyperlocation': ['Tanggal', 'Impressions', 'Clicks', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'BTL: Mobile Branding': ['Tanggal', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'Homeless Media': ['Aset', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'KOL': ['Aset', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'Tiktok Shop': ['Tanggal', 'Traffic', 'Payment']
+    };
+
+    function normalizeChannelName(s) {
+      return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+    var CHANNEL_TABLE_COLUMNS_NORM = {};
+    Object.keys(CHANNEL_TABLE_COLUMNS).forEach(function (k) {
+      CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(k)] = CHANNEL_TABLE_COLUMNS[k];
+    });
+    function getChannelTableColumns(channel) {
+      return CHANNEL_TABLE_COLUMNS[channel] || CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(channel)] || [];
+    }
+    function isTiktokShop(channel) {
+      return normalizeChannelName(channel) === 'tiktok shop';
+    }
+
+    var CHANNEL_COLORS = ['#D2122E', '#8E0E22', '#B0193A', '#C2443B', '#A11D3A', '#E0555B', '#9C2138', '#C94E5A'];
+
+    // Gradasi rank: rank pertama merah pekat, makin ke bawah makin pudar ke pink pucat.
+    var RANK_COLOR_START = [193, 20, 47];
+    var RANK_COLOR_END = [250, 227, 231];
+
+    var ALL_ROWS = [];
+    var CITY_LIST = [];
+    var currentView = 'all';      // 'all' atau nama kota
+    var activePreset = 'all';
+    var channelPage = {};         // channel -> halaman aktif
+    var channelDataCache = {};    // channel -> baris ter-filter & terurut (untuk paginasi)
+    var lastScopedRows = [];
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      bindFilterEvents();
+      apiGet('data').then(onDataLoaded).catch(onLoadError);
+    }
+
+    // ==================== API (pengganti google.script.run) ====================
+
+    function apiGet(action) {
+      if (!API_URL || API_URL.indexOf('PASTE_') === 0) {
+        return Promise.reject(new Error('API_URL belum diisi di index.html.'));
+      }
+      var url = API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(action);
+      if (API_KEY) url += '&key=' + encodeURIComponent(API_KEY);
+
+      return fetch(url, { method: 'GET', redirect: 'follow' })
+        .then(function (res) { return res.text(); })
+        .then(function (text) {
+          var json;
+          try {
+            json = JSON.parse(text);
+          } catch (e) {
+            throw new Error('Response dari Apps Script bukan JSON. Cek deployment: Execute as "Me" dan Who has access "Anyone", lalu deploy versi baru.');
+          }
+          if (!json.ok) throw new Error(json.error || 'Terjadi kesalahan di server.');
+          return json.data;
+        });
+    }
+
+    function channelColor(channel) {
+      var idx = CHANNELS.indexOf(channel);
+      return CHANNEL_COLORS[idx % CHANNEL_COLORS.length];
+    }
+
+    // "National" bukan kota sungguhan (campaign level nasional) — selalu
+    // ditaruh di posisi paling bawah & tidak dihitung sebagai Kota Terbaik.
+    // Cocok untuk nilai "National" maupun "Kota National".
+    function isNationalCity(kota) {
+      var v = String(kota || '').trim().toLowerCase();
+      return v === 'national' || v === 'kota national';
+    }
+
+    // Label tampilan: "National" / "Kota National" ditampilkan sebagai "Kota Jawa".
+    // Data mentah (r.kota, currentView) tetap memakai nilai asli agar filter tidak berubah.
+    function displayCityLabel(kota) {
+      return isNationalCity(kota) ? 'Kota Jawa' : kota;
+    }
+
+    // Badge angka rank dengan warna gradasi (tanpa emoji). t=0 di posisi teratas.
+    function rankBadge(i, total) {
+      var t = total > 1 ? i / (total - 1) : 0;
+      var rgb = [0, 1, 2].map(function (k) {
+        return Math.round(RANK_COLOR_START[k] + (RANK_COLOR_END[k] - RANK_COLOR_START[k]) * t);
+      });
+      var bg = 'rgb(' + rgb.join(',') + ')';
+      var textColor = t < 0.55 ? '#fff' : 'var(--ira-red-dark)';
+      return '<span class="rank-num" style="background:' + bg + ';color:' + textColor + '">' + (i + 1) + '</span>';
+    }
+
+    function onLoadError(err) {
+      document.getElementById('loading').style.display = 'none';
+      var box = document.getElementById('errorBox');
+      box.style.display = 'block';
+      box.textContent = 'Gagal memuat data: ' + (err && err.message ? err.message : err);
+    }
+
+    function onDataLoaded(data) {
+      // config dari server
+      FUNNEL_METRICS = data.funnelMetrics || [];
+      CHANNEL_METRIC_CONFIG = data.channelMetricConfig || {};
+      CHANNEL_DETAIL_COLUMNS = data.channelDetailColumns || {};
+      CITY_ORDER = data.cityOrder || [];
+      EXEC_SUMMARY_DEFS = data.execSummaryDefs || [];
+      ROWS_PER_PAGE = data.rowsPerPage || 5;
+      CHANNELS = Object.keys(CHANNEL_METRIC_CONFIG);
+
+      ALL_ROWS = data.rows || [];
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('appShell').style.display = 'block';
+      document.getElementById('contentBody').style.display = 'block';
+      setLastUpdated();
+      CITY_LIST = buildCityList();
+      renderSidebar();
+      renderAll();
+    }
+
+    function setLastUpdated() {
+      var now = new Date();
+      var pad = function (n) { return ('0' + n).slice(-2); };
+      document.getElementById('lastUpdated').textContent =
+        'Diperbarui ' + pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear() +
+        ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+    }
+
+    // ==================== SIDEBAR (KOTA) ====================
+
+    function buildCityList() {
+      var present = {};
+      ALL_ROWS.forEach(function (r) { if (r.kota) present[r.kota] = true; });
+      var list = [];
+      (CITY_ORDER || []).forEach(function (c) {
+        if (present[c]) { list.push(c); delete present[c]; }
+      });
+      list = list.concat(Object.keys(present).sort());
+
+      // National selalu di paling bawah (sidebar & tabel ringkasan kota).
+      var natIdx = -1;
+      for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i])) { natIdx = i; break; } }
+      if (natIdx !== -1) {
+        var nat = list.splice(natIdx, 1)[0];
+        list.push(nat);
+      }
+      return list;
+    }
+
+    function renderSidebar() {
+      var items = [{ key: 'all', label: 'Semua Kota' }].concat(
+        CITY_LIST.map(function (c) { return { key: c, label: displayCityLabel(c) }; })
+      );
+      var el = document.getElementById('sidebarList');
+      el.innerHTML = items.map(function (it) {
+        var active = it.key === currentView;
+        return '<div class="sidebar-item' + (active ? ' active' : '') + '" data-view="' + escapeAttr(it.key) + '">' +
+          escapeHtml(it.label) + '</div>';
+      }).join('');
+      el.querySelectorAll('.sidebar-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          currentView = item.getAttribute('data-view');
+          channelPage = {};
+          renderSidebar();
+          renderAll();
+        });
+      });
+    }
+
+    // ==================== FILTER ====================
+
+    function bindFilterEvents() {
+      document.getElementById('dateFrom').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
+      document.getElementById('dateTo').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
+      document.getElementById('resetBtn').addEventListener('click', function () {
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        activePreset = 'all';
+        setActivePresetBtn();
+        channelPage = {};
+        renderAll();
+      });
+      document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
+      document.querySelectorAll('.preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          applyPreset(btn.getAttribute('data-preset'));
+        });
+      });
+      setActivePresetBtn();
+    }
+
+    function applyPreset(preset) {
+      activePreset = preset;
+      setActivePresetBtn();
+      var today = new Date();
+      var from = '', to = '';
+      if (preset === 'all') {
+        from = ''; to = '';
+      } else if (preset === '7' || preset === '30') {
+        var days = preset === '7' ? 6 : 29;
+        var start = new Date(today);
+        start.setDate(start.getDate() - days);
+        from = toISO(start); to = toISO(today);
+      } else if (preset === 'month') {
+        var first = new Date(today.getFullYear(), today.getMonth(), 1);
+        from = toISO(first); to = toISO(today);
+      }
+      document.getElementById('dateFrom').value = from;
+      document.getElementById('dateTo').value = to;
+      channelPage = {};
+      renderAll();
+    }
+
+    function setActivePresetBtn() {
+      document.querySelectorAll('.preset-btn').forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
+      });
+    }
+
+    function toISO(d) {
+      var m = ('0' + (d.getMonth() + 1)).slice(-2);
+      var day = ('0' + d.getDate()).slice(-2);
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    function getScopedRows() {
+      var from = document.getElementById('dateFrom').value;
+      var to = document.getElementById('dateTo').value;
+      return ALL_ROWS.filter(function (r) {
+        if (from && r.tanggal && r.tanggal < from) return false;
+        if (to && r.tanggal && r.tanggal > to) return false;
+        if (currentView !== 'all' && r.kota !== currentView) return false;
+        return true;
+      });
+    }
+
+    // ==================== DOWNLOAD DATA (Tercover & Tidak Tercover) ====================
+
+    function handleDownloadClick() {
+      var btn = document.getElementById('downloadBtn');
+      var originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = 'Menyiapkan file…';
+
+      apiGet('export')
+        .then(function (result) {
+          triggerFileDownload(result.base64, result.fileName);
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        })
+        .catch(function (err) {
+          alert('Gagal download: ' + (err && err.message ? err.message : err));
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        });
+    }
+
+    function triggerFileDownload(base64, fileName) {
+      var byteChars = atob(base64);
+      var byteNumbers = new Array(byteChars.length);
+      for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      var byteArray = new Uint8Array(byteNumbers);
+      var blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+
+    // ==================== RENDER: TOP LEVEL ====================
+
+    function renderAll() {
+      // sebelum data selesai dimuat, belum ada yang bisa dirender
+      if (!ALL_ROWS.length && !CHANNELS.length) return;
+
+      lastScopedRows = getScopedRows();
+      updateScopeTitles();
+      renderExecSummaryCards(document.getElementById('mainExecSummary'), lastScopedRows, null, false);
+
+      var isAllCities = currentView === 'all';
+      document.getElementById('allCitiesView').style.display = isAllCities ? 'block' : 'none';
+      document.getElementById('perCityView').style.display = isAllCities ? 'none' : 'block';
+
+      if (isAllCities) {
+        renderSpotlights(document.getElementById('spotlightWrap'), lastScopedRows);
+        renderCityBreakdownTable(document.getElementById('cityBreakdownWrap'), lastScopedRows);
+        renderChannelLeaderboard(document.getElementById('channelRankingWrap'), lastScopedRows);
+      } else {
+        renderChannelCards(lastScopedRows);
+      }
+    }
+
+    function updateScopeTitles() {
+      var scopeLabel = currentView === 'all' ? 'Semua Kota' : displayCityLabel(currentView);
+      document.getElementById('scopeTitleSummary').textContent = 'Executive Summary — ' + scopeLabel;
+      document.getElementById('scopeTitleDetail').textContent = 'Detail per Channel — ' + scopeLabel;
+    }
+
+    function sum(rows, key) {
+      return rows.reduce(function (acc, r) { return acc + (r[key] || 0); }, 0);
+    }
+
+    function fmtNum(n) { return Math.round(n).toLocaleString('id-ID'); }
+    function fmtCurrency(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
+
+    function isMetricTracked(channel, headers) {
+      var applicable = CHANNEL_METRIC_CONFIG[channel] || [];
+      return headers.every(function (h) { return applicable.indexOf(h) !== -1; });
+    }
+
+    // ---------- kartu skor (dipakai di ringkasan atas & tiap channel) ----------
+
+    function computeExecMetrics(rows, channel) {
+      return EXEC_SUMMARY_DEFS
+        .filter(function (def) {
+          // excludeChannels: kartu ini disembunyikan TOTAL untuk channel ini
+          // (bukan cuma ditampilkan "–"), beda dari cek "requires" di bawah.
+          return !(channel && def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1);
+        })
+        .map(function (def) {
+          var tracked = true;
+          if (channel) {
+            tracked = isMetricTracked(channel, def.requires);
+          }
+          if (!tracked) return { label: def.label, value: '–', dash: true };
+
+          var value;
+          if (def.key === 'waitingFirstPayment') {
+            value = Math.max(0, sum(rows, 'covered') - sum(rows, 'payment'));
+          } else {
+            value = sum(rows, def.key);
+          }
+          return { label: def.label, value: fmtNum(value), dash: false };
+        });
+    }
+
+    function renderExecSummaryCards(container, rows, channel, mini) {
+      var metrics = computeExecMetrics(rows, channel);
+      container.className = 'summary-grid' + (mini ? ' mini' : '');
+      container.innerHTML = metrics.map(function (m) {
+        return '<div class="kpi-card">' +
+          '<div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
+          '<div class="kpi-value' + (m.dash ? ' is-dash' : '') + '">' + m.value + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderTiktokShopSummary(container, rows) {
+      container.className = 'summary-grid mini';
+      container.innerHTML = '<div class="kpi-card">' +
+        '<div class="kpi-label">Total Payment</div>' +
+        '<div class="kpi-value">' + fmtNum(sum(rows, 'payment')) + '</div>' +
+        '</div>';
+    }
+
+    // ==================== RENDER: SEMUA KOTA — RINGKASAN PER KOTA ====================
+
+    function computeCityBreakdown(rows) {
+      var byCity = {};
+      rows.forEach(function (r) {
+        if (!r.kota) return;
+        if (!byCity[r.kota]) {
+          byCity[r.kota] = { kota: r.kota, registrationComplete: 0, payment: 0, covered: 0, activation: 0 };
+        }
+        var c = byCity[r.kota];
+        c.registrationComplete += r.registrationComplete || 0;
+        c.payment += r.payment || 0;
+        c.covered += r.covered || 0;
+        c.activation += r.activation || 0;
+      });
+      var list = CITY_LIST.map(function (kota) { return byCity[kota]; }).filter(Boolean);
+      list.forEach(function (c) { c.notCovered = Math.max(0, c.registrationComplete - c.covered); });
+      list.sort(function (a, b) { return b.registrationComplete - a.registrationComplete; });
+
+      // National tetap ikut dihitung di Total, tapi posisinya dikunci di
+      // paling bawah terlepas dari urutan angkanya.
+      var natIdx = -1;
+      for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i].kota)) { natIdx = i; break; } }
+      if (natIdx !== -1) {
+        var nat = list.splice(natIdx, 1)[0];
+        list.push(nat);
+      }
+      return list;
+    }
+
+    function renderCityBreakdownTable(container, rows) {
+      var data = computeCityBreakdown(rows);
+      if (data.length === 0) {
+        container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
+        return;
+      }
+
+      var totals = data.reduce(function (acc, c) {
+        acc.registrationComplete += c.registrationComplete;
+        acc.covered += c.covered;
+        acc.notCovered += c.notCovered;
+        acc.payment += c.payment;
+        acc.activation += c.activation;
+        return acc;
+      }, { registrationComplete: 0, covered: 0, notCovered: 0, payment: 0, activation: 0 });
+
+      var rowsHtml = data.map(function (c, i) {
+        return '<tr>' +
+          '<td class="rank-cell">' + rankBadge(i, data.length) + '</td>' +
+          '<td>' + escapeHtml(displayCityLabel(c.kota)) + '</td>' +
+          '<td class="num bar-num-cell"><span class="cell-value">' + fmtNum(c.registrationComplete) + '</span></td>' +
+          '<td class="num">' + fmtNum(c.covered) + '</td>' +
+          '<td class="num">' + fmtNum(c.notCovered) + '</td>' +
+          '<td class="num">' + fmtNum(c.payment) + '</td>' +
+          '<td class="num">' + fmtNum(c.activation) + '</td>' +
+          '</tr>';
+      }).join('');
+
+      var totalRow = '<tr class="total-row">' +
+        '<td></td>' +
+        '<td>Total</td>' +
+        '<td class="num">' + fmtNum(totals.registrationComplete) + '</td>' +
+        '<td class="num">' + fmtNum(totals.covered) + '</td>' +
+        '<td class="num">' + fmtNum(totals.notCovered) + '</td>' +
+        '<td class="num">' + fmtNum(totals.payment) + '</td>' +
+        '<td class="num">' + fmtNum(totals.activation) + '</td>' +
+        '</tr>';
+
+      container.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr>' +
+        '<th></th><th>Kota</th><th class="num">Registrasi</th><th class="num">Tercover</th>' +
+        '<th class="num">Tidak Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rowsHtml + totalRow + '</tbody>' +
+        '</table></div>';
+    }
+
+    // ---------- spotlight: kota & channel terbaik ----------
+
+    function renderSpotlights(container, rows) {
+      var cityData = computeCityBreakdown(rows);
+      var topCity = null;
+      for (var ci = 0; ci < cityData.length; ci++) {
+        if (!isNationalCity(cityData[ci].kota) && cityData[ci].registrationComplete > 0) {
+          topCity = cityData[ci];
+          break;
+        }
+      }
+
+      var channelData = computeChannelRanking(rows);
+      var topChannel = null;
+      for (var i = 0; i < channelData.length; i++) {
+        if (channelData[i].registrationComplete !== null && channelData[i].registrationComplete > 0) {
+          topChannel = channelData[i];
+          break;
+        }
+      }
+
+      var cityIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 1114 0c0 5.314-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
+      var channelIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"></path><path d="M15 7h5v5"></path></svg>';
+
+      var cityBody = topCity
+        ? '<div class="spotlight-value">' + escapeHtml(topCity.kota) + '</div>' +
+          '<div class="spotlight-sub">' + fmtNum(topCity.registrationComplete) + ' registrasi</div>'
+        : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
+
+      var channelBody = topChannel
+        ? '<div class="spotlight-value">' + escapeHtml(topChannel.channel) + '</div>' +
+          '<div class="spotlight-sub">' + fmtNum(topChannel.registrationComplete) + ' registrasi</div>'
+        : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
+
+      container.innerHTML =
+        '<div class="spotlight-card spotlight-city"><div class="spotlight-icon">' + cityIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Kota Terbaik</div>' + cityBody + '</div></div>' +
+        '<div class="spotlight-card spotlight-channel"><div class="spotlight-icon">' + channelIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Channel Terbaik</div>' + channelBody + '</div></div>';
+    }
+
+    // ==================== RENDER: SEMUA KOTA — RINGKASAN PERFORMA CHANNEL ====================
+
+    function computeChannelRanking(rows) {
+      return CHANNELS.map(function (channel) {
+        var channelRows = rows.filter(function (r) { return r.channel === channel; });
+        var trackedRegis = isMetricTracked(channel, ['Registration Complete']);
+        var trackedCovered = isMetricTracked(channel, ['Covered']);
+        var trackedPotential = isMetricTracked(channel, ['Potential']);
+        var trackedPayment = isMetricTracked(channel, ['Payment']);
+
+        var registrationComplete = trackedRegis ? sum(channelRows, 'registrationComplete') : null;
+        var covered = trackedCovered ? sum(channelRows, 'covered') : null;
+        var potential = trackedPotential ? sum(channelRows, 'potential') : null;
+        var payment = trackedPayment ? sum(channelRows, 'payment') : null;
+        // Konversi = Payment / Tercover.
+        var konversi = (trackedCovered && trackedPayment && covered > 0)
+          ? (payment / covered * 100) : null;
+
+        return {
+          channel: channel,
+          registrationComplete: registrationComplete,
+          covered: covered,
+          potential: potential,
+          payment: payment,
+          konversi: konversi
+        };
+      }).sort(function (a, b) {
+        return (b.registrationComplete || 0) - (a.registrationComplete || 0);
+      });
+    }
+
+    function statChip_(label, value, isPercent) {
+      var display = value === null
+        ? '<span class="is-dash">–</span>'
+        : (isPercent ? value.toFixed(1) + '%' : fmtNum(value));
+      return '<div class="channel-rank-stat"><span class="stat-label">' + label + '</span><span class="stat-value' + (value === null ? ' is-dash' : '') + '">' + display + '</span></div>';
+    }
+
+    function renderChannelLeaderboard(container, rows) {
+      var data = computeChannelRanking(rows);
+      if (data.length === 0) {
+        container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="channel-leaderboard">' + data.map(function (d, i) {
+        var color = channelColor(d.channel);
+        return '<div class="channel-rank-row">' +
+          '<div class="channel-rank-badge">' + rankBadge(i, data.length) + '</div>' +
+          '<div class="channel-rank-main">' +
+            '<div class="channel-rank-name"><span class="dot" style="background:' + color + '"></span>' + escapeHtml(d.channel) + '</div>' +
+          '</div>' +
+          '<div class="channel-rank-stats">' +
+            statChip_('Registrasi', d.registrationComplete) +
+            statChip_('Potensial', d.potential) +
+            statChip_('Tercover', d.covered) +
+            statChip_('Payment', d.payment) +
+            statChip_('Konversi', d.konversi, true) +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    // ==================== RENDER: DETAIL PER CHANNEL (KOTA TERPILIH) ====================
+
+    function channelKey(channel) { return 'ch_' + channel.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+    function renderChannelCards(rows) {
+      var wrap = document.getElementById('channelCardsWrap');
+      wrap.innerHTML = CHANNELS.map(channelCardTemplate).join('');
+
+      CHANNELS.forEach(function (channel) {
+        channelPage[channel] = channelPage[channel] || 1;
+        populateChannelCard(channel, rows);
+      });
+    }
+
+    function channelCardTemplate(channel) {
+      var color = channelColor(channel);
+      var key = channelKey(channel);
+      return '<div class="channel-card">' +
+        '<div class="channel-card-header"><span class="dot" style="background:' + color + '"></span><h3>' + escapeHtml(channel) + '</h3></div>' +
+        '<div class="summary-grid mini" id="' + key + '_summary"></div>' +
+        '<div class="table-wrap"><table><thead><tr id="' + key + '_head"></tr></thead><tbody id="' + key + '_body"></tbody></table></div>' +
+        '<div class="pagination" id="' + key + '_pagination"></div>' +
+        '</div>';
+    }
+
+    function populateChannelCard(channel, rows) {
+      var key = channelKey(channel);
+      var channelRows = rows.filter(function (r) { return r.channel === channel; });
+
+      if (isTiktokShop(channel)) {
+        renderTiktokShopSummary(document.getElementById(key + '_summary'), channelRows);
+      } else {
+        renderExecSummaryCards(document.getElementById(key + '_summary'), channelRows, channel, true);
+      }
+
+      var cols = getChannelTableColumns(channel);
+      var headerCells = cols.map(function (h) {
+        var isTextCol = (h === 'Aset' || h === 'Tanggal');
+        return '<th' + (isTextCol ? '' : ' class="num"') + '>' + escapeHtml(h) + '</th>';
+      }).join('');
+      document.getElementById(key + '_head').innerHTML = headerCells;
+
+      channelDataCache[channel] = channelRows.slice().sort(function (a, b) {
+        return (b.tanggal || '').localeCompare(a.tanggal || '');
+      });
+
+      renderChannelPage(channel, 1);
+    }
+
+    function renderChannelPage(channel, page) {
+      var key = channelKey(channel);
+      var rows = channelDataCache[channel] || [];
+      var totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
+      page = Math.min(Math.max(1, page), totalPages);
+      channelPage[channel] = page;
+
+      var start = (page - 1) * ROWS_PER_PAGE;
+      var pageRows = rows.slice(start, start + ROWS_PER_PAGE);
+      var cols = getChannelTableColumns(channel);
+      var totalCols = Math.max(1, cols.length);
+
+      var body = document.getElementById(key + '_body');
+      if (pageRows.length === 0) {
+        body.innerHTML = '<tr><td colspan="' + totalCols + '"><div class="empty-state">Tidak ada data untuk channel ini pada rentang filter yang dipilih.</div></td></tr>';
+      } else {
+        body.innerHTML = pageRows.map(function (r) {
+          var cells = cols.map(function (h) {
+            if (h === 'Aset') return '<td>' + renderAssetCell(r) + '</td>';
+            if (h === 'Tanggal') return '<td>' + escapeHtml(formatTanggal(r.tanggal)) + '</td>';
+            var k = (h === 'Traffic') ? 'impressions' : HEADER_TO_KEY[h];
+            return '<td class="num">' + fmtNum(r[k] || 0) + '</td>';
+          }).join('');
+          return '<tr>' + cells + '</tr>';
+        }).join('');
+      }
+
+      var pag = document.getElementById(key + '_pagination');
+      pag.innerHTML =
+        '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="prev"' + (page <= 1 ? ' disabled' : '') + '>Sebelumnya</button>' +
+        '<span class="page-info">Halaman ' + page + ' dari ' + totalPages + ' (' + rows.length + ' baris)</span>' +
+        '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="next"' + (page >= totalPages ? ' disabled' : '') + '>Berikutnya</button>';
+
+      pag.querySelectorAll('.page-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var ch = btn.getAttribute('data-channel');
+          var dir = btn.getAttribute('data-dir');
+          var cur = channelPage[ch] || 1;
+          renderChannelPage(ch, dir === 'next' ? cur + 1 : cur - 1);
+        });
+      });
+    }
+
+    // ---------- Aset (preview gambar kalau bisa, kalau tidak -> tombol "Buka Aset") ----------
+    // Instagram & TikTok tidak bisa di-generate thumbnail otomatis tanpa API
+    // resmi (butuh OAuth/app review) — lihat komentar buildAssetPreviewUrl_
+    // di Code.gs. Untuk link itu (dan link lain yang gagal load gambar),
+    // dashboard cuma nampilin tombol "Buka Aset" yang netral.
+
+    function renderAssetCell(r) {
+      if (r.previewUrl) {
+        return '<a href="' + escapeAttr(r.linkAset) + '" target="_blank" rel="noopener">' +
+          '<img class="thumb" src="' + escapeAttr(r.previewUrl) + '" data-link="' + escapeAttr(r.linkAset) + '" ' +
+          'onerror="handleAssetImgError(this, this.getAttribute(\'data-link\'))">' +
+          '</a>';
+      }
+      if (r.linkAset) {
+        return '<a class="asset-link-btn" href="' + escapeAttr(r.linkAset) + '" target="_blank" rel="noopener">Buka Aset</a>';
+      }
+      return '<span class="no-asset">—</span>';
+    }
+
+    function handleLogoError(imgEl) {
+      var mark = document.getElementById('topbarMark');
+      if (mark) {
+        mark.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M4 19V10"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path></svg>';
+      }
+    }
+
+    function handleAssetImgError(imgEl, link) {
+      var a = document.createElement('a');
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.href = link;
+      a.className = 'asset-link-btn';
+      a.textContent = 'Buka Aset';
+      imgEl.replaceWith(a);
+    }
+
+    // ---------- utils ----------
+
+    function escapeHtml(v) {
+      if (v === null || v === undefined) return '';
+      return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function escapeAttr(v) {
+      if (v === null || v === undefined) return '';
+      return String(v).replace(/"/g, '&quot;');
+    }
+    function formatTanggal(iso) {
+      if (!iso) return '';
+      var parts = String(iso).split('-');
+      if (parts.length !== 3) return String(iso);
+      return parts[2] + '/' + parts[1] + '/' + parts[0];
+    }
+  </script>
+</body>
+</html>
