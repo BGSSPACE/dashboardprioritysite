@@ -460,7 +460,7 @@
     // ==================== KONFIGURASI KONEKSI (ISI DI SINI) ====================
 
     // URL web app Apps Script (hasil Deploy, berakhiran /exec)
-    var API_URL = 'PASTE_URL_WEB_APP_EXEC_DI_SINI';
+    var API_URL = 'https://script.google.com/macros/s/AKfycbzG5oUb5EJxZr1CT5q7CuFjz2A_1khTRqnhzjFCxkUzOtd58SO_gEHMlzis-9B7DfIqRA/exec';
 
     // Harus sama dengan API_KEY di Code.gs. Kosongkan kalau di Code.gs juga kosong.
     var API_KEY = '';
