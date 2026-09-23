@@ -25,6 +25,9 @@
       --radius-md: 12px;
       --radius-sm: 8px;
       --sidebar-w: 220px;
+      --ga-blue: #2E6FDB;
+      --ga-blue-dark: #1F4FA0;
+      --ga-teal: #2AA79A;
     }
     * { box-sizing: border-box; }
     html {
@@ -202,6 +205,7 @@
       border-top: 3px solid var(--ira-red);
       box-shadow: var(--shadow-sm);
     }
+    .kpi-card.kpi-ga { border-top-color: var(--ga-blue); }
     .kpi-card .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
     .kpi-card .kpi-value { font-size: 22px; font-weight: 800; margin-top: 8px; color: var(--ink); font-variant-numeric: tabular-nums; }
     .kpi-card .kpi-value.is-dash { color: #D9D8DC; }
@@ -312,7 +316,7 @@
     .channel-rank-stats {
       flex: 1;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 10px;
     }
     .channel-rank-stat { text-align: right; min-width: 0; }
@@ -326,6 +330,66 @@
       .channel-rank-stats { width: 100%; grid-template-columns: repeat(3, 1fr); }
     }
 
+    /* ---------- semua kota: traffic website (GA) chart ---------- */
+    .traffic-chart { display: flex; flex-direction: column; gap: 8px; }
+    .traffic-row {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 13px 16px; box-shadow: var(--shadow-sm);
+    }
+    .traffic-city { flex: 0 0 140px; min-width: 100px; font-weight: 700; font-size: 13px; }
+    .traffic-bars { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .traffic-bar-line { display: flex; align-items: center; gap: 10px; }
+    .traffic-bar-label { flex: 0 0 132px; font-size: 10.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .traffic-bar-track { flex: 1; height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; min-width: 40px; }
+    .traffic-bar-fill { height: 100%; border-radius: 999px; }
+    .traffic-bar-fill.users { background: linear-gradient(90deg, var(--ga-blue-dark), var(--ga-blue)); }
+    .traffic-bar-fill.events { background: linear-gradient(90deg, var(--ga-teal), #6FCFC2); }
+    .traffic-bar-value { flex: 0 0 62px; text-align: right; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 700px) {
+      .traffic-row { flex-wrap: wrap; }
+      .traffic-city { flex: 1 1 100%; }
+      .traffic-bars { width: 100%; }
+      .traffic-bar-label { flex-basis: 110px; }
+    }
+
+    /* ---------- keterangan istilah (legend) ---------- */
+    .legend-panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 16px 18px 18px;
+      margin-bottom: 6px;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 10px;
+    }
+    .legend-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 11px 13px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      transition: border-color .15s, background .15s;
+    }
+    .legend-item:hover { border-color: var(--ira-red); background: var(--ira-red-light); }
+    .legend-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--ira-red);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .legend-text { min-width: 0; }
+    .legend-term { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+    .legend-def { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; line-height: 1.45; }
+
+    /* (style aset tetap disimpan supaya gampang diaktifkan lagi) */
     .thumb {
       width: 42px; height: 42px; border-radius: var(--radius-sm); object-fit: cover;
       border: 1px solid var(--border); display: block;
@@ -436,6 +500,11 @@
         <h2 id="scopeTitleSummary">Executive Summary</h2>
         <div class="summary-grid" id="mainExecSummary"></div>
 
+        <h2>Legend</h2>
+        <div class="legend-panel">
+          <div class="legend-grid" id="metricLegendWrap"></div>
+        </div>
+
         <!-- Ditampilkan hanya saat "Semua Kota" dipilih -->
         <div id="allCitiesView">
           <div class="spotlight-grid" id="spotlightWrap"></div>
@@ -475,12 +544,49 @@
     var ROWS_PER_PAGE = 5;
     var CHANNELS = [];
 
+    // National aliases & nama tampilan — dipakai default sampai Code.gs
+    // mengirim data.nationalAliases / data.nationalDisplayName di response
+    // ?action=data (kalau server belum mengirim field ini, dashboard tetap
+    // jalan dengan default di bawah, sama seperti sebelumnya).
+    var NATIONAL_ALIASES = ['national', 'kota national'];
+    var NATIONAL_DISPLAY_NAME = 'Kota Jawa';
+
     // key di object row (camelCase) <-> nama header sheet
     var HEADER_TO_KEY = {
       'Reach': 'reach', 'Impressions': 'impressions', 'Clicks': 'clicks', 'LPV': 'lpv',
       'WA Inbound': 'waInbound', 'Registration Complete': 'registrationComplete',
       'Potential': 'potential', 'Covered': 'covered', 'Payment': 'payment', 'Activation': 'activation'
     };
+
+    // Label tampilan header tabel "Detail per Channel".
+    // Key = nama kolom di CHANNEL_TABLE_COLUMNS (juga dipakai buat HEADER_TO_KEY),
+    // value = teks yang ditampilkan di header. Kolom yang tidak ada di sini
+    // ditampilkan apa adanya.
+    var COLUMN_LABELS = {
+      'Registration Complete': 'Registration',
+      'Potential': 'Tidak Tercover',
+      'Covered': 'Tercover'
+    };
+    function getColumnLabel(h) {
+      return COLUMN_LABELS[h] || h;
+    }
+
+    // Label tampilan metrik traffic website (data GA). Di sheet GA tetap
+    // "All Users" / "Event Count", di dashboard ditampilkan dengan nama ini.
+    var GA_LABEL_USERS = 'Website Users';
+    var GA_LABEL_EVENTS = 'Event Count Website';
+
+    // Keterangan legend
+    var METRIC_LEGEND = [
+      { term: 'Impression', def: 'Jumlah iklan tayang kepada audience. Untuk BTL dan billboard tidak dapat dihitung impressionnya.' },
+      { term: 'Website Users', def: 'Jumlah pengguna/orang yang mengunjungi website.' },
+      { term: 'Event Count Website', def: 'Segala interaksi yang terjadi di website, misalnya: scrolls, page clicks, dan button clicks' },
+      { term: 'WA Inbound', def: 'Total chat yang masuk' },
+      { term: 'Registrasi', def: 'Calon pelanggan yang menyelesaikan pendaftaran' },
+      { term: 'Covered Status', def: 'Kategori alamat calon pelanggan tercover jaringan atau tidak' },
+      { term: 'Payment', def: 'Calon pelanggan yang sudah membayar' },
+      { term: 'Waiting First Payment', def: 'Calon pelanggan dengan status tercover yang belum menyelesaikan pembayaran' }
+    ];
 
     // Kolom tabel "Detail per Channel" per channel — ditentukan di client,
     // terlepas dari CHANNEL_DETAIL_COLUMNS bawaan server. Masing-masing
@@ -490,13 +596,16 @@
       'Tiktok Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
       'BB + Hyperlocation': ['Tanggal', 'Impressions', 'Clicks', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
       'BTL: Mobile Branding': ['Tanggal', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'Homeless Media': ['Aset', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'KOL': ['Aset', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'Tiktok Shop': ['Tanggal', 'Traffic', 'Payment']
+      'Homeless Media': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'KOL': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+      'Tiktok Shop': ['Tanggal', 'Impression', 'Traffic', 'Payment']
     };
 
-    function normalizeChannelName(s) {
+    function normalizeText(s) {
       return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+    function normalizeChannelName(s) {
+      return normalizeText(s);
     }
     var CHANNEL_TABLE_COLUMNS_NORM = {};
     Object.keys(CHANNEL_TABLE_COLUMNS).forEach(function (k) {
@@ -516,17 +625,20 @@
     var RANK_COLOR_END = [250, 227, 231];
 
     var ALL_ROWS = [];
+    var GA_ROWS = [];             // data traffic website dari sheet GA (data.gaRows)
     var CITY_LIST = [];
     var currentView = 'all';      // 'all' atau nama kota
     var activePreset = 'all';
     var channelPage = {};         // channel -> halaman aktif
     var channelDataCache = {};    // channel -> baris ter-filter & terurut (untuk paginasi)
     var lastScopedRows = [];
+    var lastScopedGa = [];        // baris GA ter-filter sesuai tanggal & kota yang aktif
 
     document.addEventListener('DOMContentLoaded', init);
 
     function init() {
       bindFilterEvents();
+      renderMetricLegend();
       apiGet('data').then(onDataLoaded).catch(onLoadError);
     }
 
@@ -553,23 +665,49 @@
         });
     }
 
+    // Render sekali saja — daftar istilahnya statis (tidak tergantung data server).
+    function renderMetricLegend() {
+      var wrap = document.getElementById('metricLegendWrap');
+      if (!wrap) return;
+      wrap.innerHTML = METRIC_LEGEND.map(function (item) {
+        return '<div class="legend-item">' +
+          '<span class="legend-dot"></span>' +
+          '<div class="legend-text">' +
+            '<div class="legend-term">' + escapeHtml(item.term) + '</div>' +
+            '<div class="legend-def">' + escapeHtml(item.def) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
     function channelColor(channel) {
       var idx = CHANNELS.indexOf(channel);
       return CHANNEL_COLORS[idx % CHANNEL_COLORS.length];
     }
 
-    // "National" bukan kota sungguhan (campaign level nasional) — selalu
-    // ditaruh di posisi paling bawah & tidak dihitung sebagai Kota Terbaik.
-    // Cocok untuk nilai "National" maupun "Kota National".
-    function isNationalCity(kota) {
-      var v = String(kota || '').trim().toLowerCase();
-      return v === 'national' || v === 'kota national';
+    // ==================== NAMA KOTA (Daily Tracker vs GA) ====================
+
+    var NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
+
+    // Kunci pencocokan kota antara Daily Tracker dan sheet GA:
+    //  - semua nama di NATIONAL_ALIASES -> 'national'
+    //  - selain itu: lowercase + prefix "Kota " dibuang, jadi "Kota Banjar" == "Banjar"
+    function cityKey(kota) {
+      var v = normalizeText(kota);
+      if (NATIONAL_ALIASES_NORM.indexOf(v) !== -1) return 'national';
+      return v.replace(/^kota\s+/, '');
     }
 
-    // Label tampilan: "National" / "Kota National" ditampilkan sebagai "Kota Jawa".
-    // Data mentah (r.kota, currentView) tetap memakai nilai asli agar filter tidak berubah.
+    // "National" bukan kota sungguhan (campaign level nasional) — selalu
+    // ditaruh di posisi paling bawah & tidak dihitung sebagai Kota Terbaik.
+    function isNationalCity(kota) {
+      return cityKey(kota) === 'national';
+    }
+
+    // Label tampilan: semua varian national ditampilkan sebagai NATIONAL_DISPLAY_NAME.
+    // Data mentah (r.kota, currentView) tetap memakai nilai asli.
     function displayCityLabel(kota) {
-      return isNationalCity(kota) ? 'Kota Jawa' : kota;
+      return isNationalCity(kota) ? NATIONAL_DISPLAY_NAME : kota;
     }
 
     // Badge angka rank dengan warna gradasi (tanpa emoji). t=0 di posisi teratas.
@@ -600,7 +738,14 @@
       ROWS_PER_PAGE = data.rowsPerPage || 5;
       CHANNELS = Object.keys(CHANNEL_METRIC_CONFIG);
 
+      // National aliases & nama tampilan — dipakai kalau server sudah kirim,
+      // kalau belum dashboard tetap jalan dengan default di atas.
+      if (data.nationalAliases && data.nationalAliases.length) NATIONAL_ALIASES = data.nationalAliases;
+      if (data.nationalDisplayName) NATIONAL_DISPLAY_NAME = data.nationalDisplayName;
+      NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
+
       ALL_ROWS = data.rows || [];
+      GA_ROWS = data.gaRows || [];
       document.getElementById('loading').style.display = 'none';
       document.getElementById('appShell').style.display = 'block';
       document.getElementById('contentBody').style.display = 'block';
@@ -621,13 +766,21 @@
     // ==================== SIDEBAR (KOTA) ====================
 
     function buildCityList() {
-      var present = {};
-      ALL_ROWS.forEach(function (r) { if (r.kota) present[r.kota] = true; });
+      // satu entri per kunci kota (varian penulisan yang sama digabung),
+      // nama yang dipakai = penulisan pertama yang ketemu di Daily Tracker
+      var presentByKey = {};
+      ALL_ROWS.forEach(function (r) {
+        if (!r.kota) return;
+        var k = cityKey(r.kota);
+        if (!presentByKey[k]) presentByKey[k] = r.kota;
+      });
+
       var list = [];
       (CITY_ORDER || []).forEach(function (c) {
-        if (present[c]) { list.push(c); delete present[c]; }
+        var k = cityKey(c);
+        if (presentByKey[k]) { list.push(presentByKey[k]); delete presentByKey[k]; }
       });
-      list = list.concat(Object.keys(present).sort());
+      list = list.concat(Object.keys(presentByKey).sort().map(function (k) { return presentByKey[k]; }));
 
       // National selalu di paling bawah (sidebar & tabel ringkasan kota).
       var natIdx = -1;
@@ -718,10 +871,26 @@
     function getScopedRows() {
       var from = document.getElementById('dateFrom').value;
       var to = document.getElementById('dateTo').value;
+      var viewKey = currentView === 'all' ? '' : cityKey(currentView);
       return ALL_ROWS.filter(function (r) {
         if (from && r.tanggal && r.tanggal < from) return false;
         if (to && r.tanggal && r.tanggal > to) return false;
-        if (currentView !== 'all' && r.kota !== currentView) return false;
+        if (viewKey && cityKey(r.kota) !== viewKey) return false;
+        return true;
+      });
+    }
+
+    // Baris GA (traffic website) yang lolos filter tanggal & kota aktif —
+    // dipakai bareng-bareng Daily Tracker supaya Executive Summary & tabel
+    // per kota selalu sinkron sama rentang filter yang sama.
+    function getScopedGaRows() {
+      var from = document.getElementById('dateFrom').value;
+      var to = document.getElementById('dateTo').value;
+      var viewKey = currentView === 'all' ? '' : cityKey(currentView);
+      return GA_ROWS.filter(function (r) {
+        if (from && r.tanggal && r.tanggal < from) return false;
+        if (to && r.tanggal && r.tanggal > to) return false;
+        if (viewKey && cityKey(r.kota) !== viewKey) return false;
         return true;
       });
     }
@@ -767,11 +936,12 @@
 
     function renderAll() {
       // sebelum data selesai dimuat, belum ada yang bisa dirender
-      if (!ALL_ROWS.length && !CHANNELS.length) return;
+      if (!ALL_ROWS.length && !GA_ROWS.length && !CHANNELS.length) return;
 
       lastScopedRows = getScopedRows();
+      lastScopedGa = getScopedGaRows();
       updateScopeTitles();
-      renderExecSummaryCards(document.getElementById('mainExecSummary'), lastScopedRows, null, false);
+      renderMainExecSummary(document.getElementById('mainExecSummary'), lastScopedRows, lastScopedGa);
 
       var isAllCities = currentView === 'all';
       document.getElementById('allCitiesView').style.display = isAllCities ? 'block' : 'none';
@@ -779,7 +949,7 @@
 
       if (isAllCities) {
         renderSpotlights(document.getElementById('spotlightWrap'), lastScopedRows);
-        renderCityBreakdownTable(document.getElementById('cityBreakdownWrap'), lastScopedRows);
+        renderCityBreakdownTable(document.getElementById('cityBreakdownWrap'), lastScopedRows, lastScopedGa);
         renderChannelLeaderboard(document.getElementById('channelRankingWrap'), lastScopedRows);
       } else {
         renderChannelCards(lastScopedRows);
@@ -806,17 +976,28 @@
 
     // ---------- kartu skor (dipakai di ringkasan atas & tiap channel) ----------
 
-    function computeExecMetrics(rows, channel) {
+    // Urutan kartu = urutan EXEC_SUMMARY_DEFS (config di Code.gs).
+    //  - channel diisi  -> kartu mini per channel: def "mainOnly" & sumber GA dilewati
+    //  - channel kosong -> summary utama: semua def dipakai, sumber GA dihitung dari gaRows
+    function computeExecMetrics(rows, channel, gaRows) {
       return EXEC_SUMMARY_DEFS
         .filter(function (def) {
-          // excludeChannels: kartu ini disembunyikan TOTAL untuk channel ini
-          // (bukan cuma ditampilkan "–"), beda dari cek "requires" di bawah.
-          return !(channel && def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1);
+          if (channel) {
+            if (def.mainOnly || def.source === 'ga') return false;
+            // excludeChannels: kartu ini disembunyikan TOTAL untuk channel ini
+            // (bukan cuma ditampilkan "–"), beda dari cek "requires" di bawah.
+            if (def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1) return false;
+          }
+          return true;
         })
         .map(function (def) {
+          if (def.source === 'ga') {
+            return { label: def.label, value: fmtNum(sum(gaRows || [], def.gaKey)), dash: false, ga: true };
+          }
+
           var tracked = true;
           if (channel) {
-            tracked = isMetricTracked(channel, def.requires);
+            tracked = isMetricTracked(channel, def.requires || []);
           }
           if (!tracked) return { label: def.label, value: '–', dash: true };
 
@@ -830,15 +1011,26 @@
         });
     }
 
-    function renderExecSummaryCards(container, rows, channel, mini) {
-      var metrics = computeExecMetrics(rows, channel);
+    function renderCards_(container, metrics, mini) {
       container.className = 'summary-grid' + (mini ? ' mini' : '');
       container.innerHTML = metrics.map(function (m) {
-        return '<div class="kpi-card">' +
+        return '<div class="kpi-card' + (m.ga ? ' kpi-ga' : '') + '">' +
           '<div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
           '<div class="kpi-value' + (m.dash ? ' is-dash' : '') + '">' + m.value + '</div>' +
           '</div>';
       }).join('');
+    }
+
+    function renderExecSummaryCards(container, rows, channel, mini) {
+      renderCards_(container, computeExecMetrics(rows, channel, null), mini);
+    }
+
+    // Executive Summary utama (di paling atas dashboard) — urutan: Impression,
+    // Website Users, Event Count Website, WA Inbound, Registrasi, dst (lihat
+    // EXEC_SUMMARY_DEFS). Selalu per kota yang sedang aktif (atau semua kota),
+    // BUKAN dipecah per channel/platform.
+    function renderMainExecSummary(container, rows, gaRows) {
+      renderCards_(container, computeExecMetrics(rows, null, gaRows), false);
     }
 
     function renderTiktokShopSummary(container, rows) {
@@ -851,20 +1043,49 @@
 
     // ==================== RENDER: SEMUA KOTA — RINGKASAN PER KOTA ====================
 
-    function computeCityBreakdown(rows) {
+    // gaRows opsional — kalau tidak dikirim, kolom Website Users/Event Count Website
+    // otomatis 0 (dipakai juga oleh renderSpotlights yang tidak butuh GA).
+    // Daily Tracker & GA digabung lewat cityKey(), jadi "Kota Banjar"/"Banjar"
+    // dan semua varian National (NATIONAL_ALIASES) dianggap kota yang sama.
+    function computeCityBreakdown(rows, gaRows) {
       var byCity = {};
+      function ensureCity(kota) {
+        var k = cityKey(kota);
+        if (!byCity[k]) {
+          byCity[k] = {
+            kota: kota,
+            impressions: 0, waInbound: 0,
+            registrationComplete: 0, payment: 0, covered: 0, activation: 0,
+            allUsers: 0, eventCount: 0
+          };
+        }
+        return byCity[k];
+      }
+
       rows.forEach(function (r) {
         if (!r.kota) return;
-        if (!byCity[r.kota]) {
-          byCity[r.kota] = { kota: r.kota, registrationComplete: 0, payment: 0, covered: 0, activation: 0 };
-        }
-        var c = byCity[r.kota];
+        var c = ensureCity(r.kota);
+        c.impressions += r.impressions || 0;
+        c.waInbound += r.waInbound || 0;
         c.registrationComplete += r.registrationComplete || 0;
         c.payment += r.payment || 0;
         c.covered += r.covered || 0;
         c.activation += r.activation || 0;
       });
-      var list = CITY_LIST.map(function (kota) { return byCity[kota]; }).filter(Boolean);
+
+      (gaRows || []).forEach(function (r) {
+        if (!r.kota) return;
+        var c = ensureCity(r.kota);
+        c.allUsers += r.allUsers || 0;
+        c.eventCount += r.eventCount || 0;
+      });
+
+      // nama kota mengikuti CITY_LIST (penulisan dari Daily Tracker)
+      var list = CITY_LIST.map(function (kota) {
+        var c = byCity[cityKey(kota)];
+        if (c) c.kota = kota;
+        return c;
+      }).filter(Boolean);
       list.forEach(function (c) { c.notCovered = Math.max(0, c.registrationComplete - c.covered); });
       list.sort(function (a, b) { return b.registrationComplete - a.registrationComplete; });
 
@@ -879,29 +1100,39 @@
       return list;
     }
 
-    function renderCityBreakdownTable(container, rows) {
-      var data = computeCityBreakdown(rows);
+    function renderCityBreakdownTable(container, rows, gaRows) {
+      var data = computeCityBreakdown(rows, gaRows);
       if (data.length === 0) {
         container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
         return;
       }
 
+      // Urutan kolom: Kota, Impression, Website Users, Event Count Website,
+      // WA Inbound, Registrasi, Tidak Tercover, Tercover, Payment, Aktif.
       var totals = data.reduce(function (acc, c) {
+        acc.impressions += c.impressions;
+        acc.allUsers += c.allUsers;
+        acc.eventCount += c.eventCount;
+        acc.waInbound += c.waInbound;
         acc.registrationComplete += c.registrationComplete;
         acc.covered += c.covered;
         acc.notCovered += c.notCovered;
         acc.payment += c.payment;
         acc.activation += c.activation;
         return acc;
-      }, { registrationComplete: 0, covered: 0, notCovered: 0, payment: 0, activation: 0 });
+      }, { impressions: 0, allUsers: 0, eventCount: 0, waInbound: 0, registrationComplete: 0, covered: 0, notCovered: 0, payment: 0, activation: 0 });
 
       var rowsHtml = data.map(function (c, i) {
         return '<tr>' +
           '<td class="rank-cell">' + rankBadge(i, data.length) + '</td>' +
           '<td>' + escapeHtml(displayCityLabel(c.kota)) + '</td>' +
+          '<td class="num">' + fmtNum(c.impressions) + '</td>' +
+          '<td class="num">' + fmtNum(c.allUsers) + '</td>' +
+          '<td class="num">' + fmtNum(c.eventCount) + '</td>' +
+          '<td class="num">' + fmtNum(c.waInbound) + '</td>' +
           '<td class="num bar-num-cell"><span class="cell-value">' + fmtNum(c.registrationComplete) + '</span></td>' +
-          '<td class="num">' + fmtNum(c.covered) + '</td>' +
           '<td class="num">' + fmtNum(c.notCovered) + '</td>' +
+          '<td class="num">' + fmtNum(c.covered) + '</td>' +
           '<td class="num">' + fmtNum(c.payment) + '</td>' +
           '<td class="num">' + fmtNum(c.activation) + '</td>' +
           '</tr>';
@@ -910,17 +1141,23 @@
       var totalRow = '<tr class="total-row">' +
         '<td></td>' +
         '<td>Total</td>' +
+        '<td class="num">' + fmtNum(totals.impressions) + '</td>' +
+        '<td class="num">' + fmtNum(totals.allUsers) + '</td>' +
+        '<td class="num">' + fmtNum(totals.eventCount) + '</td>' +
+        '<td class="num">' + fmtNum(totals.waInbound) + '</td>' +
         '<td class="num">' + fmtNum(totals.registrationComplete) + '</td>' +
-        '<td class="num">' + fmtNum(totals.covered) + '</td>' +
         '<td class="num">' + fmtNum(totals.notCovered) + '</td>' +
+        '<td class="num">' + fmtNum(totals.covered) + '</td>' +
         '<td class="num">' + fmtNum(totals.payment) + '</td>' +
         '<td class="num">' + fmtNum(totals.activation) + '</td>' +
         '</tr>';
 
       container.innerHTML = '<div class="table-wrap"><table>' +
         '<thead><tr>' +
-        '<th></th><th>Kota</th><th class="num">Registrasi</th><th class="num">Tercover</th>' +
-        '<th class="num">Tidak Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
+        '<th></th><th>Kota</th><th class="num">Impression</th>' +
+        '<th class="num">' + escapeHtml(GA_LABEL_USERS) + '</th><th class="num">' + escapeHtml(GA_LABEL_EVENTS) + '</th>' +
+        '<th class="num">WA Inbound</th><th class="num">Registrasi</th><th class="num">Tidak Tercover</th>' +
+        '<th class="num">Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
         '</tr></thead>' +
         '<tbody>' + rowsHtml + totalRow + '</tbody>' +
         '</table></div>';
@@ -951,7 +1188,7 @@
       var channelIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"></path><path d="M15 7h5v5"></path></svg>';
 
       var cityBody = topCity
-        ? '<div class="spotlight-value">' + escapeHtml(topCity.kota) + '</div>' +
+        ? '<div class="spotlight-value">' + escapeHtml(displayCityLabel(topCity.kota)) + '</div>' +
           '<div class="spotlight-sub">' + fmtNum(topCity.registrationComplete) + ' registrasi</div>'
         : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
 
@@ -965,6 +1202,49 @@
         '<div class="spotlight-card spotlight-channel"><div class="spotlight-icon">' + channelIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Channel Terbaik</div>' + channelBody + '</div></div>';
     }
 
+    // ==================== RENDER: SEMUA KOTA — TRAFFIC WEBSITE (GA) ====================
+    // Section "Traffic Website (Google Analytics)" DINONAKTIFKAN dari tampilan
+    // "Semua Kota", sama seperti versi Apps Script. Fungsi & style-nya dibiarkan
+    // supaya gampang diaktifkan lagi kalau perlu — tinggal panggil renderTrafficChart
+    // lagi di renderAll() dan tambahkan <h2>+wrap-nya di HTML.
+
+    // Visualisasi Website Users vs Event Count Website per kota, dari sheet GA.
+    function renderTrafficChart(container, rows, gaRows) {
+      var cityData = computeCityBreakdown(rows, gaRows).filter(function (c) {
+        return c.allUsers > 0 || c.eventCount > 0;
+      });
+
+      if (cityData.length === 0) {
+        container.innerHTML = '<div class="empty-state">Belum ada data traffic website untuk rentang filter yang dipilih.</div>';
+        return;
+      }
+
+      cityData.sort(function (a, b) { return b.allUsers - a.allUsers; });
+
+      var maxAllUsers = Math.max.apply(null, cityData.map(function (c) { return c.allUsers; }).concat([1]));
+      var maxEvent = Math.max.apply(null, cityData.map(function (c) { return c.eventCount; }).concat([1]));
+
+      container.innerHTML = '<div class="traffic-chart">' + cityData.map(function (c) {
+        var wUsers = Math.max(2, Math.round((c.allUsers / maxAllUsers) * 100));
+        var wEvent = Math.max(2, Math.round((c.eventCount / maxEvent) * 100));
+        return '<div class="traffic-row">' +
+          '<div class="traffic-city">' + escapeHtml(displayCityLabel(c.kota)) + '</div>' +
+          '<div class="traffic-bars">' +
+            '<div class="traffic-bar-line">' +
+              '<span class="traffic-bar-label">' + escapeHtml(GA_LABEL_USERS) + '</span>' +
+              '<div class="traffic-bar-track"><div class="traffic-bar-fill users" style="width:' + wUsers + '%"></div></div>' +
+              '<span class="traffic-bar-value">' + fmtNum(c.allUsers) + '</span>' +
+            '</div>' +
+            '<div class="traffic-bar-line">' +
+              '<span class="traffic-bar-label">' + escapeHtml(GA_LABEL_EVENTS) + '</span>' +
+              '<div class="traffic-bar-track"><div class="traffic-bar-fill events" style="width:' + wEvent + '%"></div></div>' +
+              '<span class="traffic-bar-value">' + fmtNum(c.eventCount) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
     // ==================== RENDER: SEMUA KOTA — RINGKASAN PERFORMA CHANNEL ====================
 
     function computeChannelRanking(rows) {
@@ -974,11 +1254,13 @@
         var trackedCovered = isMetricTracked(channel, ['Covered']);
         var trackedPotential = isMetricTracked(channel, ['Potential']);
         var trackedPayment = isMetricTracked(channel, ['Payment']);
+        var trackedActivation = isMetricTracked(channel, ['Activation']);
 
         var registrationComplete = trackedRegis ? sum(channelRows, 'registrationComplete') : null;
         var covered = trackedCovered ? sum(channelRows, 'covered') : null;
         var potential = trackedPotential ? sum(channelRows, 'potential') : null;
         var payment = trackedPayment ? sum(channelRows, 'payment') : null;
+        var activation = trackedActivation ? sum(channelRows, 'activation') : null;
         // Konversi = Payment / Tercover.
         var konversi = (trackedCovered && trackedPayment && covered > 0)
           ? (payment / covered * 100) : null;
@@ -989,6 +1271,7 @@
           covered: covered,
           potential: potential,
           payment: payment,
+          activation: activation,
           konversi: konversi
         };
       }).sort(function (a, b) {
@@ -1010,6 +1293,8 @@
         return;
       }
 
+      // Urutan stat chip: Registrasi, Tidak Tercover (data: potential),
+      // Tercover, Payment, Aktif, Konversi.
       container.innerHTML = '<div class="channel-leaderboard">' + data.map(function (d, i) {
         var color = channelColor(d.channel);
         return '<div class="channel-rank-row">' +
@@ -1019,9 +1304,10 @@
           '</div>' +
           '<div class="channel-rank-stats">' +
             statChip_('Registrasi', d.registrationComplete) +
-            statChip_('Potensial', d.potential) +
+            statChip_('Tidak Tercover', d.potential) +
             statChip_('Tercover', d.covered) +
             statChip_('Payment', d.payment) +
+            statChip_('Aktif', d.activation) +
             statChip_('Konversi', d.konversi, true) +
           '</div>' +
         '</div>';
@@ -1066,7 +1352,7 @@
       var cols = getChannelTableColumns(channel);
       var headerCells = cols.map(function (h) {
         var isTextCol = (h === 'Aset' || h === 'Tanggal');
-        return '<th' + (isTextCol ? '' : ' class="num"') + '>' + escapeHtml(h) + '</th>';
+        return '<th' + (isTextCol ? '' : ' class="num"') + '>' + escapeHtml(getColumnLabel(h)) + '</th>';
       }).join('');
       document.getElementById(key + '_head').innerHTML = headerCells;
 
@@ -1097,7 +1383,9 @@
           var cells = cols.map(function (h) {
             if (h === 'Aset') return '<td>' + renderAssetCell(r) + '</td>';
             if (h === 'Tanggal') return '<td>' + escapeHtml(formatTanggal(r.tanggal)) + '</td>';
-            var k = (h === 'Traffic') ? 'impressions' : HEADER_TO_KEY[h];
+            // Tiktok Shop: "Impression" = nilai impressions apa adanya,
+            // "Traffic" = LABEL untuk nilai reach (bukan impressions lagi).
+            var k = (h === 'Traffic') ? 'reach' : (h === 'Impression' ? 'impressions' : HEADER_TO_KEY[h]);
             return '<td class="num">' + fmtNum(r[k] || 0) + '</td>';
           }).join('');
           return '<tr>' + cells + '</tr>';
@@ -1120,11 +1408,9 @@
       });
     }
 
-    // ---------- Aset (preview gambar kalau bisa, kalau tidak -> tombol "Buka Aset") ----------
-    // Instagram & TikTok tidak bisa di-generate thumbnail otomatis tanpa API
-    // resmi (butuh OAuth/app review) — lihat komentar buildAssetPreviewUrl_
-    // di Code.gs. Untuk link itu (dan link lain yang gagal load gambar),
-    // dashboard cuma nampilin tombol "Buka Aset" yang netral.
+    // ---------- Aset (DINONAKTIFKAN SEMENTARA) ----------
+    // Kolom 'Aset' sudah dikeluarkan dari CHANNEL_TABLE_COLUMNS, jadi fungsi
+    // di bawah tidak terpanggil. Dibiarkan supaya gampang diaktifkan lagi.
 
     function renderAssetCell(r) {
       if (r.previewUrl) {
