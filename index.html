@@ -547,9 +547,9 @@
     // National aliases & nama tampilan — dipakai default sampai Code.gs
     // mengirim data.nationalAliases / data.nationalDisplayName di response
     // ?action=data (kalau server belum mengirim field ini, dashboard tetap
-    // jalan dengan default di bawah, sama seperti sebelumnya).
+    // jalan dengan default di bawah).
     var NATIONAL_ALIASES = ['national', 'kota national'];
-    var NATIONAL_DISPLAY_NAME = 'Kota Jawa';
+    var NATIONAL_DISPLAY_NAME = 'Wilayah Jawa';
 
     // key di object row (camelCase) <-> nama header sheet
     var HEADER_TO_KEY = {
@@ -576,6 +576,11 @@
     var GA_LABEL_USERS = 'Website Users';
     var GA_LABEL_EVENTS = 'Event Count Website';
 
+    // Urutan kartu GA di Executive Summary: Event Count Website dulu, baru
+    // Website Users. Dipakai orderExecDefs_() supaya urutan ini tetap berlaku
+    // apa pun urutan di EXEC_SUMMARY_DEFS (Code.gs). Key = gaKey di def.
+    var GA_CARD_ORDER = ['eventCount', 'allUsers'];
+
     // Keterangan legend
     var METRIC_LEGEND = [
       { term: 'Impression', def: 'Jumlah iklan tayang kepada audience. Untuk BTL dan billboard tidak dapat dihitung impressionnya.' },
@@ -588,9 +593,7 @@
       { term: 'Waiting First Payment', def: 'Calon pelanggan dengan status tercover yang belum menyelesaikan pembayaran' }
     ];
 
-    // Kolom tabel "Detail per Channel" per channel — ditentukan di client,
-    // terlepas dari CHANNEL_DETAIL_COLUMNS bawaan server. Masing-masing
-    // channel punya kebutuhan tracking sendiri jadi kolomnya beda-beda.
+    // detail per channel
     var CHANNEL_TABLE_COLUMNS = {
       'Meta Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
       'Tiktok Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
@@ -625,7 +628,7 @@
     var RANK_COLOR_END = [250, 227, 231];
 
     var ALL_ROWS = [];
-    var GA_ROWS = [];             // data traffic website dari sheet GA (data.gaRows)
+    var GA_ROWS = [];             // data traffic website dari sheet GA
     var CITY_LIST = [];
     var currentView = 'all';      // 'all' atau nama kota
     var activePreset = 'all';
@@ -690,7 +693,7 @@
     var NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
 
     // Kunci pencocokan kota antara Daily Tracker dan sheet GA:
-    //  - semua nama di NATIONAL_ALIASES -> 'national'
+    //  - semua nama di NATIONAL_ALIASES (config di Code.gs) -> 'national'
     //  - selain itu: lowercase + prefix "Kota " dibuang, jadi "Kota Banjar" == "Banjar"
     function cityKey(kota) {
       var v = normalizeText(kota);
@@ -704,8 +707,8 @@
       return cityKey(kota) === 'national';
     }
 
-    // Label tampilan: semua varian national ditampilkan sebagai NATIONAL_DISPLAY_NAME.
-    // Data mentah (r.kota, currentView) tetap memakai nilai asli.
+    // Label tampilan: semua varian national ditampilkan sebagai NATIONAL_DISPLAY_NAME
+    // ("Wilayah Jawa"). Data mentah (r.kota, currentView) tetap memakai nilai asli.
     function displayCityLabel(kota) {
       return isNationalCity(kota) ? NATIONAL_DISPLAY_NAME : kota;
     }
@@ -976,39 +979,60 @@
 
     // ---------- kartu skor (dipakai di ringkasan atas & tiap channel) ----------
 
-    // Urutan kartu = urutan EXEC_SUMMARY_DEFS (config di Code.gs).
+    // Susun ulang kartu GA di dalam slot-nya sendiri: Event Count Website
+    // dulu, baru Website Users (lihat GA_CARD_ORDER). Posisi kartu non-GA
+    // (Impression, WA Inbound, Registrasi, dst) tidak berubah, jadi urutan
+    // akhirnya: Impression, Event Count Website, Website Users, selebihnya sama.
+    function orderExecDefs_(defs) {
+      var slots = [];
+      var gaDefs = [];
+      defs.forEach(function (d, i) {
+        if (d.source === 'ga') { slots.push(i); gaDefs.push(d); }
+      });
+      gaDefs.sort(function (a, b) {
+        var ia = GA_CARD_ORDER.indexOf(a.gaKey);
+        var ib = GA_CARD_ORDER.indexOf(b.gaKey);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      });
+      var out = defs.slice();
+      slots.forEach(function (idx, n) { out[idx] = gaDefs[n]; });
+      return out;
+    }
+
+    // Urutan kartu = urutan EXEC_SUMMARY_DEFS (config di Code.gs), dengan
+    // kartu GA diurutkan lewat orderExecDefs_().
     //  - channel diisi  -> kartu mini per channel: def "mainOnly" & sumber GA dilewati
     //  - channel kosong -> summary utama: semua def dipakai, sumber GA dihitung dari gaRows
     function computeExecMetrics(rows, channel, gaRows) {
-      return EXEC_SUMMARY_DEFS
-        .filter(function (def) {
-          if (channel) {
-            if (def.mainOnly || def.source === 'ga') return false;
-            // excludeChannels: kartu ini disembunyikan TOTAL untuk channel ini
-            // (bukan cuma ditampilkan "–"), beda dari cek "requires" di bawah.
-            if (def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1) return false;
-          }
-          return true;
-        })
-        .map(function (def) {
-          if (def.source === 'ga') {
-            return { label: def.label, value: fmtNum(sum(gaRows || [], def.gaKey)), dash: false, ga: true };
-          }
+      var defs = EXEC_SUMMARY_DEFS.filter(function (def) {
+        if (channel) {
+          if (def.mainOnly || def.source === 'ga') return false;
+          // excludeChannels: kartu ini disembunyikan TOTAL untuk channel ini
+          // (bukan cuma ditampilkan "–"), beda dari cek "requires" di bawah.
+          if (def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1) return false;
+        }
+        return true;
+      });
 
-          var tracked = true;
-          if (channel) {
-            tracked = isMetricTracked(channel, def.requires || []);
-          }
-          if (!tracked) return { label: def.label, value: '–', dash: true };
+      return orderExecDefs_(defs).map(function (def) {
+        if (def.source === 'ga') {
+          return { label: def.label, value: fmtNum(sum(gaRows || [], def.gaKey)), dash: false, ga: true };
+        }
 
-          var value;
-          if (def.key === 'waitingFirstPayment') {
-            value = Math.max(0, sum(rows, 'covered') - sum(rows, 'payment'));
-          } else {
-            value = sum(rows, def.key);
-          }
-          return { label: def.label, value: fmtNum(value), dash: false };
-        });
+        var tracked = true;
+        if (channel) {
+          tracked = isMetricTracked(channel, def.requires || []);
+        }
+        if (!tracked) return { label: def.label, value: '–', dash: true };
+
+        var value;
+        if (def.key === 'waitingFirstPayment') {
+          value = Math.max(0, sum(rows, 'covered') - sum(rows, 'payment'));
+        } else {
+          value = sum(rows, def.key);
+        }
+        return { label: def.label, value: fmtNum(value), dash: false };
+      });
     }
 
     function renderCards_(container, metrics, mini) {
@@ -1026,9 +1050,9 @@
     }
 
     // Executive Summary utama (di paling atas dashboard) — urutan: Impression,
-    // Website Users, Event Count Website, WA Inbound, Registrasi, dst (lihat
-    // EXEC_SUMMARY_DEFS). Selalu per kota yang sedang aktif (atau semua kota),
-    // BUKAN dipecah per channel/platform.
+    // Event Count Website, Website Users, WA Inbound, Registrasi, dst (lihat
+    // EXEC_SUMMARY_DEFS + orderExecDefs_). Selalu per kota yang sedang aktif
+    // (atau semua kota), BUKAN dipecah per channel/platform.
     function renderMainExecSummary(container, rows, gaRows) {
       renderCards_(container, computeExecMetrics(rows, null, gaRows), false);
     }
@@ -1107,7 +1131,7 @@
         return;
       }
 
-      // Urutan kolom: Kota, Impression, Website Users, Event Count Website,
+      // Urutan kolom: Kota, Impression, Event Count Website, Website Users,
       // WA Inbound, Registrasi, Tidak Tercover, Tercover, Payment, Aktif.
       var totals = data.reduce(function (acc, c) {
         acc.impressions += c.impressions;
@@ -1127,8 +1151,8 @@
           '<td class="rank-cell">' + rankBadge(i, data.length) + '</td>' +
           '<td>' + escapeHtml(displayCityLabel(c.kota)) + '</td>' +
           '<td class="num">' + fmtNum(c.impressions) + '</td>' +
-          '<td class="num">' + fmtNum(c.allUsers) + '</td>' +
           '<td class="num">' + fmtNum(c.eventCount) + '</td>' +
+          '<td class="num">' + fmtNum(c.allUsers) + '</td>' +
           '<td class="num">' + fmtNum(c.waInbound) + '</td>' +
           '<td class="num bar-num-cell"><span class="cell-value">' + fmtNum(c.registrationComplete) + '</span></td>' +
           '<td class="num">' + fmtNum(c.notCovered) + '</td>' +
@@ -1142,8 +1166,8 @@
         '<td></td>' +
         '<td>Total</td>' +
         '<td class="num">' + fmtNum(totals.impressions) + '</td>' +
-        '<td class="num">' + fmtNum(totals.allUsers) + '</td>' +
         '<td class="num">' + fmtNum(totals.eventCount) + '</td>' +
+        '<td class="num">' + fmtNum(totals.allUsers) + '</td>' +
         '<td class="num">' + fmtNum(totals.waInbound) + '</td>' +
         '<td class="num">' + fmtNum(totals.registrationComplete) + '</td>' +
         '<td class="num">' + fmtNum(totals.notCovered) + '</td>' +
@@ -1155,7 +1179,7 @@
       container.innerHTML = '<div class="table-wrap"><table>' +
         '<thead><tr>' +
         '<th></th><th>Kota</th><th class="num">Impression</th>' +
-        '<th class="num">' + escapeHtml(GA_LABEL_USERS) + '</th><th class="num">' + escapeHtml(GA_LABEL_EVENTS) + '</th>' +
+        '<th class="num">' + escapeHtml(GA_LABEL_EVENTS) + '</th><th class="num">' + escapeHtml(GA_LABEL_USERS) + '</th>' +
         '<th class="num">WA Inbound</th><th class="num">Registrasi</th><th class="num">Tidak Tercover</th>' +
         '<th class="num">Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
         '</tr></thead>' +
@@ -1204,9 +1228,9 @@
 
     // ==================== RENDER: SEMUA KOTA — TRAFFIC WEBSITE (GA) ====================
     // Section "Traffic Website (Google Analytics)" DINONAKTIFKAN dari tampilan
-    // "Semua Kota", sama seperti versi Apps Script. Fungsi & style-nya dibiarkan
-    // supaya gampang diaktifkan lagi kalau perlu — tinggal panggil renderTrafficChart
-    // lagi di renderAll() dan tambahkan <h2>+wrap-nya di HTML.
+    // "Semua Kota" atas permintaan user. Fungsi & style-nya dibiarkan supaya
+    // gampang diaktifkan lagi kalau perlu — tinggal panggil renderTrafficChart
+    // lagi di renderAll() dan kembalikan <h2>+wrap-nya di HTML.
 
     // Visualisasi Website Users vs Event Count Website per kota, dari sheet GA.
     function renderTrafficChart(container, rows, gaRows) {
