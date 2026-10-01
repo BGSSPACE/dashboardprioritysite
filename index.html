@@ -1,1933 +1,1528 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard Performance — 10 City Campaign Report IRA</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
-  <style>
-    :root {
-      --ira-red: #D2122E;
-      --ira-red-dark: #8E0E22;
-      --ira-red-light: #FBEEF0;
-      --ira-red-soft: rgba(210,18,46,0.06);
-      --gold: #B98B3E;
-      --gold-light: #F8F1E1;
-      --ink: #1F2024;
-      --ink-soft: #52535A;
-      --muted: #94959D;
-      --border: #EDEBEC;
-      --bg: #F5F3F5;
-      --white: #FFFFFF;
-      --shadow-sm: 0 1px 2px rgba(31,32,36,0.05);
-      --shadow-md: 0 8px 22px rgba(142,14,34,0.07);
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
-      --sidebar-w: 220px;
-      --ga-blue: #2E6FDB;
-      --ga-blue-dark: #1F4FA0;
-      --ga-teal: #2AA79A;
-    }
-    * { box-sizing: border-box; }
-    html { height: 100%; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      -webkit-font-smoothing: antialiased;
-    }
-    ::selection { background: var(--ira-red-light); }
-
-    .app-shell { display: block; min-height: 100vh; }
-
-    .sidebar {
-      width: var(--sidebar-w);
-      box-sizing: border-box;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      overflow-y: auto;
-      background: linear-gradient(180deg, var(--ira-red) 0%, var(--ira-red-dark) 100%);
-      box-shadow: 2px 0 14px rgba(27,51,80,0.14);
-      padding: 20px 12px;
-      z-index: 30;
-    }
-    .sidebar-brand {
-      display: flex; align-items: center; gap: 12px;
-      padding: 2px 8px 18px; margin-bottom: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.18);
-    }
-    .sidebar-mark { width: auto; height: 54px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .sidebar-mark img { height: 100%; width: auto; max-width: 64px; object-fit: contain; display: block; }
-    .sidebar-brand-text .sub { margin: 0; font-size: 13px; color: #fff; font-weight: 700; letter-spacing: 0.1px; line-height: 1.35; }
-    .sidebar-item {
-      padding: 10px 14px; border-radius: 999px; cursor: pointer;
-      font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.78);
-      margin-bottom: 4px; transition: background .15s, color .15s;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .sidebar-item:hover { background: rgba(255,255,255,0.12); color: #fff; }
-    .sidebar-item.active { background: #fff; color: var(--ira-red-dark); font-weight: 700; }
-
-    .content { margin-left: var(--sidebar-w); max-width: 1220px; padding: 20px 28px 70px; }
-
-    h2 {
-      font-size: 13px; font-weight: 700; letter-spacing: 0.3px; color: var(--ira-red-dark);
-      margin: 28px 0 13px; display: flex; align-items: center; gap: 10px;
-    }
-    h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    h2:first-of-type { margin-top: 2px; }
-
-    .filters-bar {
-      position: sticky; top: 18px; z-index: 20;
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-      padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-    }
-    .filter-group { display: flex; flex-direction: column; gap: 5px; }
-    .filter-group label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .filter-group input {
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 7px 10px; font-size: 13px; color: var(--ink); background: var(--bg);
-      transition: border-color .15s;
-    }
-    .filter-group input:focus { outline: none; border-color: var(--ira-red); }
-    .preset-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-    .preset-btn, .reset-btn {
-      border: 1px solid var(--border); background: var(--bg); color: var(--ink-soft);
-      border-radius: 999px; padding: 7px 13px; font-size: 11.5px; font-weight: 600;
-      cursor: pointer; transition: all .15s;
-    }
-    .preset-btn:hover, .reset-btn:hover { border-color: var(--ira-red); color: var(--ira-red-dark); }
-    .preset-btn.active { background: var(--ira-red); border-color: var(--ira-red); color: var(--white); }
-    .reset-btn { color: var(--ira-red-dark); }
-    .download-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      border: 1px solid var(--ira-red); background: var(--ira-red); color: #fff;
-      border-radius: 999px; padding: 7px 15px; font-size: 11.5px; font-weight: 700;
-      cursor: pointer; transition: all .15s;
-    }
-    .download-btn:hover:not(:disabled) { background: var(--ira-red-dark); border-color: var(--ira-red-dark); }
-    .download-btn:disabled { opacity: 0.6; cursor: default; }
-    .last-updated { margin-left: auto; font-size: 11.5px; color: var(--muted); align-self: center; font-weight: 600; white-space: nowrap; }
-
-    .filter-group .date-range-inputs { display: flex; align-items: center; gap: 6px; }
-    .filter-group .date-range-inputs input[type="date"] {
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 7px 9px; font-size: 12.5px; color: var(--ink); background: var(--bg);
-      transition: border-color .15s; min-width: 0;
-    }
-    .filter-group .date-range-inputs input[type="date"]:focus { outline: none; border-color: var(--ira-red); }
-    .filter-group .date-range-sep { color: var(--muted); font-size: 12px; font-weight: 700; }
-
-    .kpi-card.kpi-payment {
-      background: linear-gradient(135deg, var(--gold-light) 0%, var(--white) 55%, var(--ira-red-light) 100%);
-      border-top-color: var(--gold);
-    }
-
-    #loading {
-      margin: 60px auto; text-align: center; color: var(--muted); font-size: 13.5px;
-      display: flex; flex-direction: column; align-items: center; gap: 14px;
-    }
-    .spinner {
-      width: 30px; height: 30px; border-radius: 50%;
-      border: 3px solid var(--ira-red-light); border-top-color: var(--ira-red);
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #errorBox {
-      display: none; margin: 24px 0; color: var(--ira-red-dark);
-      background: var(--ira-red-light); border-radius: var(--radius-md); padding: 16px 20px; font-size: 13.5px;
-    }
-    #contentBody { display: none; animation: fadeIn .3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
-    .kpi-card {
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);
-      padding: 18px 20px; border-top: 3px solid var(--ira-red); box-shadow: var(--shadow-sm);
-    }
-    .kpi-card.kpi-ga { border-top-color: var(--ga-blue); }
-    .kpi-card .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
-    .kpi-card .kpi-value { font-size: 22px; font-weight: 800; margin-top: 8px; color: var(--ink); font-variant-numeric: tabular-nums; }
-    .kpi-card .kpi-value.is-dash { color: #D9D8DC; }
-
-    .summary-grid.mini { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-bottom: 18px; }
-    .summary-grid.mini .kpi-card { padding: 11px 13px; border-top-width: 2px; }
-    .summary-grid.mini .kpi-value { font-size: 15px; margin-top: 4px; }
-
-    .channel-card {
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg);
-      padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm);
-    }
-    .channel-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .channel-card-header .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .channel-card-header h3 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
-
-    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
-    table { border-collapse: collapse; width: 100%; font-size: 13px; }
-    thead th {
-      background: var(--ira-red-light); color: var(--ira-red-dark); text-align: left;
-      padding: 10px 13px; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.4px; white-space: nowrap;
-    }
-    thead th.num { text-align: right; }
-    tbody td { padding: 10px 13px; border-top: 1px solid var(--border); white-space: nowrap; }
-    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    tbody tr:nth-child(even) { background: #FCFBFC; }
-    tbody tr:hover { background: var(--ira-red-soft); }
-    tbody tr.total-row { background: var(--bg); font-weight: 700; }
-    tbody tr.total-row:hover { background: var(--bg); }
-    td .is-dash, .kpi-value.is-dash { color: #D9D8DC; }
-
-    .rank-cell { width: 34px; text-align: center; }
-    .rank-num {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 23px; height: 23px; border-radius: 50%; font-size: 11px; font-weight: 700;
-    }
-    td.bar-num-cell .cell-value { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-    .spotlight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 6px; }
-    .spotlight-card {
-      border-radius: var(--radius-md); padding: 18px 20px; color: #fff; box-shadow: var(--shadow-md);
-      display: flex; align-items: center; gap: 14px; position: relative; overflow: hidden;
-    }
-    .spotlight-card::after {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(160px 90px at 100% 0%, rgba(255,255,255,0.35), transparent 70%);
-      pointer-events: none;
-    }
-    .spotlight-card.spotlight-city { background: linear-gradient(135deg, var(--ira-red-dark) 0%, var(--ira-red) 60%, #fff 200%); }
-    .spotlight-card.spotlight-channel { background: linear-gradient(135deg, var(--ira-red) 0%, var(--ira-red-dark) 60%, #fff 200%); }
-    .spotlight-icon {
-      width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.28); display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; position: relative; z-index: 1;
-    }
-    .spotlight-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
-    .spotlight-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; opacity: 0.82; }
-    .spotlight-value { font-size: 16px; font-weight: 800; margin-top: 3px; letter-spacing: 0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .spotlight-value.spotlight-empty { font-size: 12.5px; font-weight: 600; font-style: italic; opacity: 0.75; }
-    .spotlight-sub { font-size: 11px; margin-top: 3px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .channel-leaderboard { display: flex; flex-direction: column; gap: 8px; }
-    .channel-rank-row {
-      display: flex; align-items: center; gap: 14px;
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);
-      padding: 13px 16px; box-shadow: var(--shadow-sm);
-    }
-    .channel-rank-badge { width: 26px; flex-shrink: 0; text-align: center; }
-    .channel-rank-main { flex: 0 0 180px; min-width: 140px; }
-    .channel-rank-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; }
-    .channel-rank-name .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .channel-rank-stats { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-    .channel-rank-stat { text-align: right; min-width: 0; }
-    .channel-rank-stat .stat-label { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 700; }
-    .channel-rank-stat .stat-value { display: block; font-size: 14px; font-weight: 800; margin-top: 3px; font-variant-numeric: tabular-nums; }
-    .channel-rank-stat .stat-value.is-dash { color: #D9D8DC; font-weight: 600; }
-
-    @media (max-width: 700px) {
-      .channel-rank-row { flex-wrap: wrap; }
-      .channel-rank-main { flex: 1 1 100%; }
-      .channel-rank-stats { width: 100%; grid-template-columns: repeat(3, 1fr); }
-    }
-
-    .traffic-chart { display: flex; flex-direction: column; gap: 8px; }
-    .traffic-row {
-      display: flex; align-items: center; gap: 16px;
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);
-      padding: 13px 16px; box-shadow: var(--shadow-sm);
-    }
-    .traffic-city { flex: 0 0 140px; min-width: 100px; font-weight: 700; font-size: 13px; }
-    .traffic-bars { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-    .traffic-bar-line { display: flex; align-items: center; gap: 10px; }
-    .traffic-bar-label { flex: 0 0 132px; font-size: 10.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-    .traffic-bar-track { flex: 1; height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; min-width: 40px; }
-    .traffic-bar-fill { height: 100%; border-radius: 999px; }
-    .traffic-bar-fill.users { background: linear-gradient(90deg, var(--ga-blue-dark), var(--ga-blue)); }
-    .traffic-bar-fill.events { background: linear-gradient(90deg, var(--ga-teal), #6FCFC2); }
-    .traffic-bar-value { flex: 0 0 62px; text-align: right; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-
-    @media (max-width: 700px) {
-      .traffic-row { flex-wrap: wrap; }
-      .traffic-city { flex: 1 1 100%; }
-      .traffic-bars { width: 100%; }
-      .traffic-bar-label { flex-basis: 110px; }
-    }
-
-    .legend-panel {
-      background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm); padding: 16px 18px 18px; margin-bottom: 6px;
-    }
-    .legend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
-    .legend-item {
-      display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px;
-      border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--border);
-      transition: border-color .15s, background .15s;
-    }
-    .legend-item:hover { border-color: var(--ira-red); background: var(--ira-red-light); }
-    .legend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ira-red); margin-top: 6px; flex-shrink: 0; }
-    .legend-text { min-width: 0; }
-    .legend-term { font-size: 12.5px; font-weight: 700; color: var(--ink); }
-    .legend-def { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; line-height: 1.45; }
-
-    .daily-chart-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-    .chart-toggle-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      border: 1.5px solid var(--border); background: var(--white); color: var(--ink-soft);
-      border-radius: 999px; padding: 6px 13px; font-size: 11.5px; font-weight: 700;
-      cursor: pointer; transition: all .15s;
-    }
-    .chart-toggle-chip:hover { box-shadow: var(--shadow-sm); }
-    .chart-toggle-chip .chip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .chart-toggle-chip.active { color: #fff; }
-    .daily-chart-wrap {
-      position: relative; background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 18px 20px 8px; margin-bottom: 6px;
-    }
-    .daily-chart-svg { width: 100%; height: auto; display: block; cursor: crosshair; }
-    .chart-grid-line { stroke: var(--border); stroke-width: 1; }
-    .chart-axis-label { font-size: 10px; fill: var(--muted); font-weight: 600; }
-    .chart-crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
-    .daily-chart-tooltip {
-      position: absolute; z-index: 5; background: var(--ink); color: #fff;
-      border-radius: var(--radius-sm); padding: 9px 12px; font-size: 11.5px;
-      box-shadow: var(--shadow-md); pointer-events: none; min-width: 152px;
-    }
-    .daily-chart-tooltip .chart-tooltip-date { font-weight: 700; margin-bottom: 6px; font-size: 11px; opacity: 0.85; }
-    .chart-tooltip-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; white-space: nowrap; }
-    .chart-tooltip-row .chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .chart-tooltip-label { flex: 1; opacity: 0.85; }
-    .chart-tooltip-value { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-    .thumb {
-      width: 42px; height: 42px; border-radius: var(--radius-sm); object-fit: cover;
-      border: 1px solid var(--border); display: block; transition: transform .15s, box-shadow .15s;
-    }
-    .thumb:hover { transform: scale(1.15); box-shadow: var(--shadow-md); }
-    .no-asset { font-size: 12px; color: var(--muted); }
-    .asset-link-btn {
-      display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 999px;
-      border: 1px solid var(--border); background: var(--white); color: var(--ira-red-dark);
-      font-size: 11.5px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: all .15s;
-    }
-    .asset-link-btn:hover { border-color: var(--ira-red); background: var(--ira-red-light); }
-    .notes-cell { max-width: 200px; white-space: normal; color: var(--muted); font-size: 12.5px; font-style: italic; }
-    .empty-state { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
-
-    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px 0; font-size: 12px; color: var(--muted); }
-    .page-btn {
-      border: 1px solid var(--border); background: var(--white); color: var(--ink-soft);
-      border-radius: var(--radius-sm); padding: 6px 12px; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all .15s;
-    }
-    .page-btn:hover:not(:disabled) { border-color: var(--ira-red); color: var(--ira-red-dark); }
-    .page-btn:disabled { opacity: 0.4; cursor: default; }
-    .page-info { font-weight: 600; }
-
-    .growth-header-note { font-size: 12px; color: var(--muted); margin: -6px 0 16px; }
-    .kpi-card .kpi-delta { font-size: 11.5px; font-weight: 700; margin-top: 6px; }
-    .kpi-card .kpi-delta.delta-up { color: #1E8E5A; }
-    .kpi-card .kpi-delta.delta-down { color: var(--ira-red-dark); }
-    .kpi-card .kpi-delta.delta-flat { color: var(--muted); }
-    .kpi-card.kpi-changes { border-top-color: var(--gold); background: var(--gold-light); }
-    .kpi-card.kpi-changes .kpi-label { color: #8A6A26; }
-    .kpi-card.kpi-changes .kpi-changes-line { font-size: 12.5px; font-weight: 700; margin-top: 8px; color: var(--ink); }
-    .kpi-card.kpi-changes .kpi-changes-line.delta-up { color: #1E8E5A; }
-    .kpi-card.kpi-changes .kpi-changes-line.delta-down { color: var(--ira-red-dark); }
-    td.cell-stack { text-align: right; }
-    td.cell-stack .cell-value { display: block; font-weight: 700; font-variant-numeric: tabular-nums; }
-    td.cell-stack .cell-delta { display: block; font-size: 11px; font-weight: 700; margin-top: 2px; }
-    td.cell-stack .cell-delta.delta-up { color: #1E8E5A; }
-    td.cell-stack .cell-delta.delta-down { color: var(--ira-red-dark); }
-    td.cell-stack .cell-delta.delta-flat { color: var(--muted); }
-
-    @media (max-width: 860px) {
-      .sidebar {
-        width: 100%; position: static; display: flex; flex-wrap: wrap; align-items: center;
-        overflow-x: auto; gap: 4px; padding: 10px 12px;
-      }
-      .sidebar-brand { width: 100%; border-bottom: none; margin-bottom: 6px; padding-bottom: 6px; }
-      .sidebar-item { flex: 0 0 auto; margin-bottom: 0; }
-      .content { margin-left: 0; padding: 14px 14px 60px; }
-      .filters-bar { position: static; }
-      .last-updated { margin-left: 0; }
-    }
-  </style>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Performance — 10 City Campaign Report IRA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<style>
+:root{--ira-red:#D2122E;--ira-red-dark:#8E0E22;--ira-red-light:#FBEEF0;--ira-red-soft:rgba(210,18,46,0.06);--gold:#B98B3E;--gold-light:#F8F1E1;--ink:#1F2024;--ink-soft:#52535A;--muted:#94959D;--border:#EDEBEC;--bg:#F5F3F5;--white:#FFFFFF;--shadow-sm:0 1px 2px rgba(31,32,36,0.05);--shadow-md:0 8px 22px rgba(142,14,34,0.07);--radius-lg:16px;--radius-md:12px;--radius-sm:8px;--sidebar-w:220px;--ga-blue:#2E6FDB;--ga-blue-dark:#1F4FA0;--ga-teal:#2AA79A}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+::selection{background:var(--ira-red-light)}
+.app-shell{display:block;min-height:100vh}
+.sidebar{width:var(--sidebar-w);box-sizing:border-box;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;background:linear-gradient(180deg,var(--ira-red) 0%,var(--ira-red-dark) 100%);box-shadow:2px 0 14px rgba(27,51,80,0.14);padding:20px 12px;z-index:30;display:flex;flex-direction:column}
+.sidebar-brand{display:flex;align-items:center;gap:12px;padding:2px 8px 18px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.18);flex-shrink:0}
+.sidebar-mark{width:auto;height:54px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-mark img{height:100%;width:auto;max-width:64px;object-fit:contain;display:block}
+.sidebar-brand-text .sub{margin:0;font-size:13px;color:#fff;font-weight:700;letter-spacing:0.1px;line-height:1.35}
+#sidebarList{flex:0 0 auto}
+.sidebar-item{padding:10px 14px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:600;color:rgba(255,255,255,0.78);margin-bottom:4px;transition:background .15s,color .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-item:hover{background:rgba(255,255,255,0.12);color:#fff}
+.sidebar-item.active{background:#fff;color:var(--ira-red-dark);font-weight:700}
+.sidebar-footer{margin-top:auto;padding-top:16px;border-top:1px solid rgba(255,255,255,0.18);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.sidebar-link-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,0.55);background:rgba(255,255,255,0.10);color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;transition:background .15s,color .15s,border-color .15s}
+.sidebar-link-btn:hover{background:#fff;color:var(--ira-red-dark);border-color:#fff}
+.content{margin-left:var(--sidebar-w);max-width:1220px;padding:20px 28px 70px}
+h2{font-size:13px;font-weight:700;letter-spacing:0.3px;color:var(--ira-red-dark);margin:28px 0 13px;display:flex;align-items:center;gap:10px}
+h2::after{content:'';flex:1;height:1px;background:var(--border)}
+h2:first-of-type{margin-top:2px}
+.filters-bar{position:sticky;top:18px;z-index:20;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:5px}
+.filter-group label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.filter-group input{border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--ink);background:var(--bg);transition:border-color .15s}
+.filter-group input:focus{outline:none;border-color:var(--ira-red)}
+.preset-btns{display:flex;gap:6px;flex-wrap:wrap}
+.preset-btn,.reset-btn{border:1px solid var(--border);background:var(--bg);color:var(--ink-soft);border-radius:999px;padding:7px 13px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s}
+.preset-btn:hover,.reset-btn:hover{border-color:var(--ira-red);color:var(--ira-red-dark)}
+.preset-btn.active{background:var(--ira-red);border-color:var(--ira-red);color:var(--white)}
+.reset-btn{color:var(--ira-red-dark)}
+.download-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ira-red);background:var(--ira-red);color:#fff;border-radius:999px;padding:7px 15px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s}
+.download-btn:hover:not(:disabled){background:var(--ira-red-dark);border-color:var(--ira-red-dark)}
+.download-btn:disabled{opacity:0.6;cursor:default}
+.filter-group .date-range-inputs{display:flex;align-items:center;gap:6px}
+.filter-group .date-range-inputs input[type="date"]{border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12.5px;color:var(--ink);background:var(--bg);transition:border-color .15s;min-width:0}
+.filter-group .date-range-inputs input[type="date"]:focus{outline:none;border-color:var(--ira-red)}
+.filter-group .date-range-sep{color:var(--muted);font-size:12px;font-weight:700}
+.kpi-card.kpi-payment{background:linear-gradient(135deg,var(--gold-light) 0%,var(--white) 55%,var(--ira-red-light) 100%);border-top-color:var(--gold)}
+.kpi-card.kpi-pay-ok{border-top-color:#1E8E5A}
+.kpi-card.kpi-pay-wait{border-top-color:var(--gold)}
+.kpi-card .kpi-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+#loading{margin:60px auto;text-align:center;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.spinner{width:30px;height:30px;border-radius:50%;border:3px solid var(--ira-red-light);border-top-color:var(--ira-red);animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#errorBox{display:none;margin:24px;color:var(--ira-red-dark);background:var(--ira-red-light);border-radius:var(--radius-md);padding:16px 20px;font-size:13.5px}
+#contentBody{display:none;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 20px;border-top:3px solid var(--ira-red);box-shadow:var(--shadow-sm)}
+.kpi-card.kpi-ga{border-top-color:var(--ga-blue)}
+.kpi-card .kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700}
+.kpi-card .kpi-value{font-size:22px;font-weight:800;margin-top:8px;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi-card .kpi-value.is-dash{color:#D9D8DC}
+.summary-grid.mini{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin-bottom:18px}
+.summary-grid.mini .kpi-card{padding:11px 13px;border-top-width:2px}
+.summary-grid.mini .kpi-value{font-size:15px;margin-top:4px}
+.channel-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.channel-card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.channel-card-header .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.channel-card-header h3{margin:0;font-size:14.5px;font-weight:700;color:var(--ink)}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+thead th{background:var(--ira-red-light);color:var(--ira-red-dark);text-align:left;padding:10px 13px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap}
+thead th.num{text-align:right}
+tbody td{padding:10px 13px;border-top:1px solid var(--border);white-space:nowrap}
+tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:nth-child(even){background:#FCFBFC}
+tbody tr:hover{background:var(--ira-red-soft)}
+tbody tr.total-row{background:var(--bg);font-weight:700}
+tbody tr.total-row:hover{background:var(--bg)}
+td .is-dash,.kpi-value.is-dash{color:#D9D8DC}
+.rank-cell{width:34px;text-align:center}
+.rank-num{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;font-size:11px;font-weight:700}
+td.bar-num-cell .cell-value{font-weight:700;font-variant-numeric:tabular-nums}
+.spotlight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:6px}
+.spotlight-card{border-radius:var(--radius-md);padding:18px 20px;color:#fff;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.spotlight-card::after{content:'';position:absolute;inset:0;background:radial-gradient(160px 90px at 100% 0%,rgba(255,255,255,0.35),transparent 70%);pointer-events:none}
+.spotlight-card.spotlight-city{background:linear-gradient(135deg,var(--ira-red-dark) 0%,var(--ira-red) 60%,#fff 200%)}
+.spotlight-card.spotlight-channel{background:linear-gradient(135deg,var(--ira-red) 0%,var(--ira-red-dark) 60%,#fff 200%)}
+.spotlight-icon{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.28);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1}
+.spotlight-text{flex:1;min-width:0;position:relative;z-index:1}
+.spotlight-label{font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;opacity:0.82}
+.spotlight-value{font-size:16px;font-weight:800;margin-top:3px;letter-spacing:0.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spotlight-value.spotlight-empty{font-size:12.5px;font-weight:600;font-style:italic;opacity:0.75}
+.spotlight-sub{font-size:11px;margin-top:3px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.channel-leaderboard{display:flex;flex-direction:column;gap:8px}
+.channel-rank-row{display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 16px;box-shadow:var(--shadow-sm)}
+.channel-rank-badge{width:26px;flex-shrink:0;text-align:center}
+.channel-rank-main{flex:0 0 180px;min-width:140px}
+.channel-rank-name{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}
+.channel-rank-name .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.channel-rank-stats{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.channel-rank-stat{text-align:right;min-width:0}
+.channel-rank-stat .stat-label{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);font-weight:700}
+.channel-rank-stat .stat-value{display:block;font-size:14px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.channel-rank-stat .stat-value.is-dash{color:#D9D8DC;font-weight:600}
+@media (max-width:700px){.channel-rank-row{flex-wrap:wrap}.channel-rank-main{flex:1 1 100%}.channel-rank-stats{width:100%;grid-template-columns:repeat(3,1fr)}}
+.legend-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:16px 18px 18px;margin-bottom:6px}
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.legend-item{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);transition:border-color .15s,background .15s}
+.legend-item:hover{border-color:var(--ira-red);background:var(--ira-red-light)}
+.legend-dot{width:7px;height:7px;border-radius:50%;background:var(--ira-red);margin-top:6px;flex-shrink:0}
+.legend-text{min-width:0}
+.legend-term{font-size:12.5px;font-weight:700;color:var(--ink)}
+.legend-def{font-size:11.5px;color:var(--ink-soft);margin-top:2px;line-height:1.45}
+.daily-chart-toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chart-toggle-chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--border);background:var(--white);color:var(--ink-soft);border-radius:999px;padding:6px 13px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s}
+.chart-toggle-chip:hover{box-shadow:var(--shadow-sm)}
+.chart-toggle-chip .chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.chart-toggle-chip.active{color:#fff}
+.daily-chart-wrap{position:relative;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:18px 20px 8px;margin-bottom:6px}
+.daily-chart-svg{width:100%;height:auto;display:block;cursor:crosshair}
+.chart-grid-line{stroke:var(--border);stroke-width:1}
+.chart-axis-label{font-size:10px;fill:var(--muted);font-weight:600}
+.chart-crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;pointer-events:none}
+.daily-chart-tooltip{position:absolute;z-index:5;background:var(--ink);color:#fff;border-radius:var(--radius-sm);padding:9px 12px;font-size:11.5px;box-shadow:var(--shadow-md);pointer-events:none;min-width:152px}
+.daily-chart-tooltip .chart-tooltip-date{font-weight:700;margin-bottom:6px;font-size:11px;opacity:0.85}
+.chart-tooltip-row{display:flex;align-items:center;gap:6px;padding:2px 0;white-space:nowrap}
+.chart-tooltip-row .chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.chart-tooltip-label{flex:1;opacity:0.85}
+.chart-tooltip-value{font-weight:700;font-variant-numeric:tabular-nums}
+.empty-state{padding:32px;text-align:center;color:var(--muted);font-size:13px}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 4px 0;font-size:12px;color:var(--muted)}
+.page-btn{border:1px solid var(--border);background:var(--white);color:var(--ink-soft);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.page-btn:hover:not(:disabled){border-color:var(--ira-red);color:var(--ira-red-dark)}
+.page-btn:disabled{opacity:0.4;cursor:default}
+.page-info{font-weight:600}
+.growth-header-note{font-size:12px;color:var(--muted);margin:-6px 0 16px}
+.kpi-card .kpi-delta{font-size:11.5px;font-weight:700;margin-top:6px}
+.kpi-card .kpi-delta.delta-up{color:#1E8E5A}
+.kpi-card .kpi-delta.delta-down{color:var(--ira-red-dark)}
+.kpi-card .kpi-delta.delta-flat{color:var(--muted)}
+.kpi-card.kpi-changes{border-top-color:var(--gold);background:var(--gold-light)}
+.kpi-card.kpi-changes .kpi-label{color:#8A6A26}
+.kpi-card.kpi-changes .kpi-changes-line{font-size:12.5px;font-weight:700;margin-top:8px;color:var(--ink)}
+.kpi-card.kpi-changes .kpi-changes-line.delta-up{color:#1E8E5A}
+.kpi-card.kpi-changes .kpi-changes-line.delta-down{color:var(--ira-red-dark)}
+td.cell-stack{text-align:right}
+td.cell-stack .cell-value{display:block;font-weight:700;font-variant-numeric:tabular-nums}
+td.cell-stack .cell-delta{display:block;font-size:11px;font-weight:700;margin-top:2px}
+td.cell-stack .cell-delta.delta-up{color:#1E8E5A}
+td.cell-stack .cell-delta.delta-down{color:var(--ira-red-dark)}
+td.cell-stack .cell-delta.delta-flat{color:var(--muted)}
+@media (max-width:860px){
+.sidebar{position:static;width:100%;height:auto;bottom:auto;overflow:visible;flex-direction:column;gap:10px;padding:12px 12px 10px}
+.sidebar-brand{padding:0 2px 10px;margin-bottom:0;gap:10px}
+.sidebar-mark{height:38px}
+.sidebar-mark img{max-width:48px}
+.sidebar-brand-text .sub{font-size:12.5px}
+#sidebarList{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#sidebarList::-webkit-scrollbar{display:none}
+.sidebar-item{flex:0 0 auto;margin-bottom:0;padding:8px 14px;font-size:13px}
+.sidebar-footer{margin-top:0;padding-top:10px;flex-direction:row}
+.sidebar-link-btn{flex:1 1 0;width:auto;padding:9px 8px;font-size:12px}
+.content{margin-left:0;padding:14px 14px 60px}
+.filters-bar{position:static}
+}
+@media (max-width:700px){
+.content{padding:12px 12px 48px}
+h2{margin:22px 0 10px}
+.filters-bar{padding:12px;gap:10px}
+.filter-group{flex:1 1 130px}
+.filter-group input,.filter-group .date-range-inputs input[type="date"]{width:100%;font-size:16px}
+.filter-group .date-range-inputs{width:100%}
+.filter-group .date-range-inputs input[type="date"]{flex:1 1 0;padding:8px}
+#summaryFiltersBar .filter-group{flex:1 1 100%}
+.preset-btns{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.preset-btns::-webkit-scrollbar{display:none}
+.preset-btn{flex:0 0 auto;padding:8px 13px}
+.reset-btn,.download-btn{flex:1 1 0;justify-content:center;padding:10px 12px}
+.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi-card{padding:13px 14px}
+.kpi-card .kpi-label{font-size:9.5px}
+.kpi-card .kpi-value{font-size:18px;margin-top:6px}
+.kpi-card.kpi-changes{grid-column:1/-1}
+.summary-grid.mini{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.summary-grid.mini .kpi-value{font-size:14px}
+.channel-card{padding:12px;border-radius:14px}
+.table-wrap{-webkit-overflow-scrolling:touch}
+table{font-size:12px}
+thead th{padding:8px 10px;font-size:10px}
+tbody td{padding:8px 10px}
+.spotlight-grid{grid-template-columns:1fr;gap:10px}
+.spotlight-card{padding:14px 16px}
+.legend-panel{padding:12px}
+.legend-grid{grid-template-columns:1fr;gap:8px}
+.chart-toggle-chip{padding:6px 11px;font-size:11px}
+.daily-chart-wrap{padding:12px 10px 4px;border-radius:14px}
+.chart-axis-label{font-size:15px}
+.daily-chart-svg{touch-action:pan-y}
+.channel-rank-row{padding:12px;gap:10px}
+.channel-rank-main{flex:1 1 0;min-width:0}
+.channel-rank-stats{grid-template-columns:repeat(3,1fr);gap:10px 8px}
+.channel-rank-stat{text-align:left}
+.pagination{flex-wrap:wrap;gap:8px}
+.page-info{order:-1;flex:1 1 100%;text-align:center}
+.page-btn{flex:1 1 0;padding:9px 12px}
+}
+</style>
 </head>
 <body>
 
-  <div id="loading">
-    <div class="spinner"></div>
-    <div>Memuat data…</div>
-  </div>
-  <div id="errorBox"></div>
+<div id="loading"><div class="spinner"></div><div>Memuat data…</div></div>
+<div id="errorBox"></div>
 
-  <div class="app-shell" id="appShell" style="display:none">
-    <div class="sidebar">
-      <div class="sidebar-brand">
-        <div class="sidebar-mark" id="topbarMark">
-          <img src="https://lh3.googleusercontent.com/d/1eCFLNqbXRC-xDy9HviUrfoGnszsXngX_=s200"
-               alt="Internet Rakyat" onerror="handleLogoError(this)">
-        </div>
-        <div class="sidebar-brand-text">
-          <p class="sub">Campaign 10 Kota — Internet Rakyat</p>
-        </div>
+<div class="app-shell" id="appShell" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-mark" id="topbarMark">
+        <img src="https://lh3.googleusercontent.com/d/1eCFLNqbXRC-xDy9HviUrfoGnszsXngX_=s200" alt="Internet Rakyat" onerror="handleLogoError(this)">
       </div>
-      <div id="sidebarList"></div>
+      <div class="sidebar-brand-text"><p class="sub">Campaign 10 Kota — Internet Rakyat</p></div>
     </div>
-
-    <div class="content">
-      <div class="filters-bar" id="regularFiltersBar">
-        <div class="filter-group">
-          <label>Dari Tanggal</label>
-          <input type="date" id="dateFrom">
-        </div>
-        <div class="filter-group">
-          <label>Sampai Tanggal</label>
-          <input type="date" id="dateTo">
-        </div>
-        <div class="preset-btns" id="presetBtns">
-          <button class="preset-btn" data-preset="all">Semua</button>
-          <button class="preset-btn" data-preset="7">7 Hari Terakhir</button>
-          <button class="preset-btn" data-preset="30">30 Hari Terakhir</button>
-          <button class="preset-btn" data-preset="month">Bulan Ini</button>
-        </div>
-        <button class="reset-btn" id="resetBtn">Reset Filter</button>
-        <button class="download-btn" id="downloadBtn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
-          Download Data
-        </button>
-        <div class="last-updated" id="lastUpdated"></div>
-      </div>
-
-      <div class="filters-bar" id="summaryFiltersBar" style="display:none">
-        <div class="filter-group">
-          <label>Periode A</label>
-          <div class="date-range-inputs">
-            <input type="date" id="periodAFrom">
-            <span class="date-range-sep">–</span>
-            <input type="date" id="periodATo">
-          </div>
-        </div>
-        <div class="filter-group">
-          <label>Periode B</label>
-          <div class="date-range-inputs">
-            <input type="date" id="periodBFrom">
-            <span class="date-range-sep">–</span>
-            <input type="date" id="periodBTo">
-          </div>
-        </div>
-        <button class="reset-btn" id="summaryResetBtn">Reset Periode</button>
-        <button class="download-btn" id="summaryDownloadBtn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
-          Download PDF
-        </button>
-      </div>
-
-      <div id="contentBody">
-
-        <div id="summaryView" style="display:none">
-          <h2>Summary</h2>
-          <div class="growth-header-note" id="growthScopeLabel"></div>
-          <div class="summary-grid" id="growthKpiWrap"></div>
-
-          <h2>Performance by Channel</h2>
-          <div id="growthChannelWrap"></div>
-
-          <h2>City Breakdown</h2>
-          <div id="growthCityWrap"></div>
-        </div>
-
-        <div id="mainDashboardView">
-          <h2 id="scopeTitleSummary">Executive Summary</h2>
-          <div class="summary-grid" id="mainExecSummary"></div>
-
-          <h2>Legend</h2>
-          <div class="legend-panel">
-            <div class="legend-grid" id="metricLegendWrap"></div>
-          </div>
-
-          <div id="allCitiesView">
-            <h2>Grafik Performa Harian</h2>
-            <div id="dailyChartWrap"></div>
-
-            <div class="spotlight-grid" id="spotlightWrap"></div>
-
-            <h2>Ringkasan per Kota</h2>
-            <div id="cityBreakdownWrap"></div>
-
-            <h2>Ringkasan Performa Channel</h2>
-            <div id="channelRankingWrap"></div>
-          </div>
-
-          <div id="perCityView">
-            <h2 id="scopeTitleDetail">Detail per Channel</h2>
-            <div id="channelCardsWrap"></div>
-          </div>
-        </div>
-
-      </div>
+    <div id="sidebarList"></div>
+    <div class="sidebar-footer">
+      <a class="sidebar-link-btn" href="https://script.google.com/a/macros/sspace.id/s/AKfycbytlQLF88FotCqe96E6pkCdsol_iSb1DWhAK_RJ97_EpDQqkpHjIuZBNuirJF9eKaVl/exec" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path></svg>
+        Performance Content
+      </a>
+      <a class="sidebar-link-btn" href="https://script.google.com/a/sspace.id/macros/s/AKfycbycAbCw0H-yaXbzsbubb5ajwrcF1CogszPfBfMPfh2S217ouQQUUZVvZad1o4xWibAT/exec?brand=IRA" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        Comment Handling
+      </a>
     </div>
   </div>
 
-  <script>
-    // ==================== KONFIGURASI KONEKSI (ISI DI SINI) ====================
+  <div class="content">
+    <div class="filters-bar" id="regularFiltersBar">
+      <div class="filter-group"><label>Dari Tanggal</label><input type="date" id="dateFrom"></div>
+      <div class="filter-group"><label>Sampai Tanggal</label><input type="date" id="dateTo"></div>
+      <div class="preset-btns" id="presetBtns">
+        <button class="preset-btn" data-preset="all">Semua</button>
+        <button class="preset-btn" data-preset="7">7 Hari Terakhir</button>
+        <button class="preset-btn" data-preset="30">30 Hari Terakhir</button>
+        <button class="preset-btn" data-preset="month">Bulan Ini</button>
+      </div>
+      <button class="reset-btn" id="resetBtn">Reset Filter</button>
+      <button class="download-btn" id="downloadBtn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+        Download Data
+      </button>
+    </div>
 
-    // URL web app Apps Script (hasil Deploy, berakhiran /exec)
-    var API_URL = 'https://script.google.com/macros/s/AKfycbzG5oUb5EJxZr1CT5q7CuFjz2A_1khTRqnhzjFCxkUzOtd58SO_gEHMlzis-9B7DfIqRA/exec';
+    <div class="filters-bar" id="summaryFiltersBar" style="display:none">
+      <div class="filter-group"><label>Periode A</label>
+        <div class="date-range-inputs"><input type="date" id="periodAFrom"><span class="date-range-sep">–</span><input type="date" id="periodATo"></div>
+      </div>
+      <div class="filter-group"><label>Periode B</label>
+        <div class="date-range-inputs"><input type="date" id="periodBFrom"><span class="date-range-sep">–</span><input type="date" id="periodBTo"></div>
+      </div>
+      <button class="reset-btn" id="summaryResetBtn">Reset Periode</button>
+      <button class="download-btn" id="summaryDownloadBtn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+        Download PDF
+      </button>
+    </div>
 
-    // Harus sama dengan API_KEY di Code.gs. Kosongkan kalau di Code.gs juga kosong.
-    var API_KEY = '';
+    <div id="contentBody">
+      <div id="summaryView" style="display:none">
+        <h2>Summary</h2>
+        <div class="growth-header-note" id="growthScopeLabel"></div>
+        <div class="summary-grid" id="growthKpiWrap"></div>
+        <h2>Performance by Channel</h2>
+        <div id="growthChannelWrap"></div>
+        <h2>City Breakdown</h2>
+        <div id="growthCityWrap"></div>
+      </div>
 
-    // ==================== KONFIGURASI DARI SERVER ====================
-    // Diisi otomatis dari response ?action=data (satu sumber config: Code.gs)
-    var FUNNEL_METRICS = [];
-    var CHANNEL_METRIC_CONFIG = {};
-    var CHANNEL_DETAIL_COLUMNS = {};
-    var CITY_ORDER = [];
-    var EXEC_SUMMARY_DEFS = [];
-    var ROWS_PER_PAGE = 5;
-    var CHANNELS = [];
+      <div id="mainDashboardView">
+        <h2 id="scopeTitleSummary">Executive Summary</h2>
+        <div class="summary-grid" id="mainExecSummary"></div>
 
-    // National aliases & nama tampilan — dipakai default sampai Code.gs
-    // mengirim data.nationalAliases / data.nationalDisplayName di response
-    // ?action=data (kalau server belum mengirim field ini, dashboard tetap
-    // jalan dengan default di bawah).
-    var NATIONAL_ALIASES = ['national', 'kota national'];
-    var NATIONAL_DISPLAY_NAME = 'Wilayah Jawa';
+        <h2 id="paymentDetailTitle">Detail Payment</h2>
+        <div class="summary-grid" id="paymentDetailWrap"></div>
 
-    // key di object row (camelCase) <-> nama header sheet
-    var HEADER_TO_KEY = {
-      'Reach': 'reach', 'Impressions': 'impressions', 'Clicks': 'clicks', 'LPV': 'lpv',
-      'WA Inbound': 'waInbound', 'Registration Complete': 'registrationComplete',
-      'Potential': 'potential', 'Covered': 'covered', 'Payment': 'payment', 'Activation': 'activation'
-    };
+        <h2>Legend</h2>
+        <div class="legend-panel"><div class="legend-grid" id="metricLegendWrap"></div></div>
 
-    // Label tampilan header tabel "Detail per Channel".
-    var COLUMN_LABELS = {
-      'Registration Complete': 'Registration',
-      'Potential': 'Tidak Tercover',
-      'Covered': 'Tercover'
-    };
-    function getColumnLabel(h) {
-      return COLUMN_LABELS[h] || h;
-    }
+        <div id="allCitiesView">
+          <h2>Grafik Performa Harian</h2>
+          <div id="dailyChartWrap"></div>
+          <div class="spotlight-grid" id="spotlightWrap"></div>
+          <h2>Ringkasan per Kota</h2>
+          <div id="cityBreakdownWrap"></div>
+          <h2>Ringkasan Performa Channel</h2>
+          <div id="channelRankingWrap"></div>
+        </div>
 
-    // Label tampilan metrik traffic website (data GA).
-    var GA_LABEL_USERS = 'Website Users';
-    var GA_LABEL_EVENTS = 'Event Count Website';
+        <div id="perCityView">
+          <h2 id="scopeTitleDetail">Detail per Channel</h2>
+          <div id="channelCardsWrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // Urutan kartu GA di Executive Summary: Event Count Website dulu, baru Website Users.
-    var GA_CARD_ORDER = ['eventCount', 'allUsers'];
+<script>
+// ==================== KONFIGURASI KONEKSI ====================
+// URL web app Apps Script (hasil Deploy, berakhiran /exec)
+var API_URL = 'https://script.google.com/macros/s/AKfycbzG5oUb5EJxZr1CT5q7CuFjz2A_1khTRqnhzjFCxkUzOtd58SO_gEHMlzis-9B7DfIqRA/exec';
+// Harus sama dengan API_KEY di Code.gs. Kosongkan kalau di Code.gs juga kosong.
+var API_KEY = '';
 
-    // Keterangan legend
-    var METRIC_LEGEND = [
-      { term: 'Impression', def: 'Jumlah iklan tayang kepada audience. Untuk BTL dan billboard tidak dapat dihitung impressionnya.' },
-      { term: 'Website Users', def: 'Jumlah pengguna/orang yang mengunjungi website.' },
-      { term: 'Event Count Website', def: 'Segala interaksi yang terjadi di website, misalnya: scrolls, page clicks, dan button clicks' },
-      { term: 'WA Inbound', def: 'Total chat yang masuk' },
-      { term: 'Registrasi', def: 'Calon pelanggan yang menyelesaikan pendaftaran' },
-      { term: 'Covered Status', def: 'Kategori alamat calon pelanggan tercover jaringan atau tidak' },
-      { term: 'Payment', def: 'Calon pelanggan yang sudah membayar' }
-    ];
+// ==================== KONFIGURASI DARI SERVER ====================
+// Diisi otomatis dari response ?action=data (satu sumber config: Code.gs)
+var FUNNEL_METRICS = [];
+var CHANNEL_METRIC_CONFIG = {};
+var CHANNEL_DETAIL_COLUMNS = {};
+var CITY_ORDER = [];
+var NATIONAL_ALIASES = ['national', 'kota national'];
+var NATIONAL_DISPLAY_NAME = 'Wilayah Jawa';
+var EXEC_SUMMARY_DEFS = [];
+var ROWS_PER_PAGE = 5;
+var CHANNELS = [];
 
-    // detail per channel
-    var CHANNEL_TABLE_COLUMNS = {
-      'Meta Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'Tiktok Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'BB + Hyperlocation': ['Tanggal', 'Impressions', 'Clicks', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'BTL: Mobile Branding': ['Tanggal', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'Homeless Media': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'KOL': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
-      'Tiktok Shop': ['Tanggal', 'Impression', 'Traffic', 'Payment']
-    };
-
-    function normalizeText(s) {
-      return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-    }
-    function normalizeChannelName(s) {
-      return normalizeText(s);
-    }
-    var CHANNEL_TABLE_COLUMNS_NORM = {};
-    Object.keys(CHANNEL_TABLE_COLUMNS).forEach(function (k) {
-      CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(k)] = CHANNEL_TABLE_COLUMNS[k];
+function apiGet(action) {
+  if (!API_URL) return Promise.reject(new Error('API_URL belum diisi di index.html.'));
+  var url = API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(action);
+  if (API_KEY) url += '&key=' + encodeURIComponent(API_KEY);
+  return fetch(url, { method: 'GET', redirect: 'follow' })
+    .then(function (res) { return res.text(); })
+    .then(function (text) {
+      var json;
+      try { json = JSON.parse(text); }
+      catch (e) { throw new Error('Response dari Apps Script bukan JSON. Cek deployment: Execute as "Me", Who has access "Anyone", lalu deploy versi baru.'); }
+      if (!json.ok) throw new Error(json.error || 'Terjadi kesalahan di server.');
+      return json.data;
     });
-    function getChannelTableColumns(channel) {
-      return CHANNEL_TABLE_COLUMNS[channel] || CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(channel)] || [];
-    }
-    function isTiktokShop(channel) {
-      return normalizeChannelName(channel) === 'tiktok shop';
-    }
+}
 
-    var CHANNEL_COLORS = ['#D2122E', '#8E0E22', '#B0193A', '#C2443B', '#A11D3A', '#E0555B', '#9C2138', '#C94E5A'];
+var HEADER_TO_KEY = {
+  'Reach': 'reach', 'Impressions': 'impressions', 'Clicks': 'clicks', 'LPV': 'lpv',
+  'WA Inbound': 'waInbound', 'Registration Complete': 'registrationComplete',
+  'Potential': 'potential', 'Covered': 'covered', 'Payment': 'payment', 'Activation': 'activation'
+};
 
-    // Gradasi rank: rank pertama merah pekat, makin ke bawah makin pudar ke pink pucat.
-    var RANK_COLOR_START = [193, 20, 47];
-    var RANK_COLOR_END = [250, 227, 231];
+var COLUMN_LABELS = { 'Registration Complete': 'Registration', 'Potential': 'Tidak Tercover', 'Covered': 'Tercover' };
+function getColumnLabel(h) { return COLUMN_LABELS[h] || h; }
 
-    var ALL_ROWS = [];
-    var GA_ROWS = [];             // data traffic website dari sheet GA
-    var NON_COVERAGE_ROWS = [];   // baris sheet "Tidak Tercover" dengan Status Payment = SUCCEEDED
-    var CITY_LIST = [];
-    var currentView = 'all';      // 'summary', 'all', atau nama kota
-    var activePreset = 'all';
-    var channelPage = {};         // channel -> halaman aktif
-    var channelDataCache = {};    // channel -> baris ter-filter & terurut (untuk paginasi)
-    var lastScopedRows = [];
-    var lastScopedGa = [];             // baris GA ter-filter sesuai tanggal & kota yang aktif
-    var lastScopedNonCoverage = [];    // baris non-coverage payment ter-filter sesuai tanggal & kota yang aktif
-    var summaryDatesInitialized = false;
+var GA_LABEL_USERS = 'Website Users';
+var GA_LABEL_EVENTS = 'Event Count Website';
+var GA_CARD_ORDER = ['eventCount', 'allUsers'];
 
-    document.addEventListener('DOMContentLoaded', init);
+var METRIC_LEGEND = [
+  { term: 'Impression', def: 'Jumlah iklan tayang kepada audience. Untuk BTL dan billboard tidak dapat dihitung impressionnya.' },
+  { term: 'Website Users', def: 'Jumlah pengguna/orang yang mengunjungi website.' },
+  { term: 'Event Count Website', def: 'Segala interaksi yang terjadi di website, misalnya: scrolls, page clicks, dan button clicks' },
+  { term: 'WA Inbound', def: 'Total chat yang masuk' },
+  { term: 'Registrasi', def: 'Calon pelanggan yang menyelesaikan pendaftaran' },
+  { term: 'Covered Status', def: 'Kategori alamat calon pelanggan tercover jaringan atau tidak' },
+  { term: 'Payment', def: 'Calon pelanggan yang sudah membayar' },
+  { term: 'Detail Payment', def: 'Rincian status pembayaran calon pelanggan, dipisah antara area tercover dan tidak tercover.' }
+];
 
-    function init() {
-      bindFilterEvents();
-      renderMetricLegend();
-      apiGet('data').then(onDataLoaded).catch(onLoadError);
-    }
+var CHANNEL_TABLE_COLUMNS = {
+  'Meta Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'Tiktok Ads': ['Tanggal', 'Reach', 'Impressions', 'Clicks', 'LPV', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'BB + Hyperlocation': ['Tanggal', 'Impressions', 'Clicks', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'BTL: Mobile Branding': ['Tanggal', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'Homeless Media': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'KOL': ['Tanggal', 'Reach', 'Impressions', 'WA Inbound', 'Registration Complete', 'Potential', 'Covered', 'Payment', 'Activation'],
+  'Tiktok Shop': ['Tanggal', 'Impression', 'Traffic', 'Payment']
+};
 
-    // ==================== API (pengganti google.script.run) ====================
+function normalizeText(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+function normalizeChannelName(s) { return normalizeText(s); }
+var CHANNEL_TABLE_COLUMNS_NORM = {};
+Object.keys(CHANNEL_TABLE_COLUMNS).forEach(function (k) {
+  CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(k)] = CHANNEL_TABLE_COLUMNS[k];
+});
+function getChannelTableColumns(channel) {
+  return CHANNEL_TABLE_COLUMNS[channel] || CHANNEL_TABLE_COLUMNS_NORM[normalizeChannelName(channel)] || [];
+}
+function isTiktokShop(channel) { return normalizeChannelName(channel) === 'tiktok shop'; }
 
-    function apiGet(action) {
-      if (!API_URL || API_URL.indexOf('PASTE_') === 0) {
-        return Promise.reject(new Error('API_URL belum diisi di index.html.'));
-      }
-      var url = API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(action);
-      if (API_KEY) url += '&key=' + encodeURIComponent(API_KEY);
+var CHANNEL_COLORS = ['#D2122E', '#8E0E22', '#B0193A', '#C2443B', '#A11D3A', '#E0555B', '#9C2138', '#C94E5A'];
+var RANK_COLOR_START = [193, 20, 47];
+var RANK_COLOR_END = [250, 227, 231];
 
-      return fetch(url, { method: 'GET', redirect: 'follow' })
-        .then(function (res) { return res.text(); })
-        .then(function (text) {
-          var json;
-          try {
-            json = JSON.parse(text);
-          } catch (e) {
-            throw new Error('Response dari Apps Script bukan JSON. Cek deployment: Execute as "Me" dan Who has access "Anyone", lalu deploy versi baru.');
-          }
-          if (!json.ok) throw new Error(json.error || 'Terjadi kesalahan di server.');
-          return json.data;
-        });
-    }
+var ALL_ROWS = [];
+var GA_ROWS = [];             // A-E  harian non-kumulatif per kota
+var GA_TOTAL_ROWS = [];       // G-I  harian non-kumulatif total
+var GA_CUM_TOTAL_ROWS = [];   // K-M  kumulatif total
+var GA_CUM_CITY_ROWS = [];    // O-S  kumulatif per kota
+var PAYMENT_DETAIL_ROWS = [];
+var CITY_LIST = [];
+var currentView = 'all';
+var activePreset = 'all';
+var channelPage = {};
+var channelDataCache = {};
+var lastScopedRows = [];
+var lastScopedGa = [];
+var lastScopedGaTotal = [];
+var lastScopedPaymentDetail = [];
+var summaryDatesInitialized = false;
 
-    // Render sekali saja — daftar istilahnya statis (tidak tergantung data server).
-    function renderMetricLegend() {
-      var wrap = document.getElementById('metricLegendWrap');
-      if (!wrap) return;
-      wrap.innerHTML = METRIC_LEGEND.map(function (item) {
-        return '<div class="legend-item">' +
-          '<span class="legend-dot"></span>' +
-          '<div class="legend-text">' +
-            '<div class="legend-term">' + escapeHtml(item.term) + '</div>' +
-            '<div class="legend-def">' + escapeHtml(item.def) + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-    }
+document.addEventListener('DOMContentLoaded', init);
 
-    function channelColor(channel) {
-      var idx = CHANNELS.indexOf(channel);
-      return CHANNEL_COLORS[idx % CHANNEL_COLORS.length];
-    }
+function init() {
+  bindFilterEvents();
+  renderMetricLegend();
+  apiGet('data').then(onDataLoaded).catch(onLoadError);
+}
 
-    // ==================== NAMA KOTA (Daily Tracker vs GA) ====================
+function renderMetricLegend() {
+  var wrap = document.getElementById('metricLegendWrap');
+  if (!wrap) return;
+  wrap.innerHTML = METRIC_LEGEND.map(function (item) {
+    return '<div class="legend-item"><span class="legend-dot"></span><div class="legend-text">' +
+      '<div class="legend-term">' + escapeHtml(item.term) + '</div>' +
+      '<div class="legend-def">' + escapeHtml(item.def) + '</div></div></div>';
+  }).join('');
+}
 
-    var NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
+function channelColor(channel) {
+  var idx = CHANNELS.indexOf(channel);
+  return CHANNEL_COLORS[idx % CHANNEL_COLORS.length];
+}
 
-    function cityKey(kota) {
-      var v = normalizeText(kota);
-      if (NATIONAL_ALIASES_NORM.indexOf(v) !== -1) return 'national';
-      return v.replace(/^kota\s+/, '');
-    }
+// ==================== NAMA KOTA ====================
+var NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
 
-    function isNationalCity(kota) {
-      return cityKey(kota) === 'national';
-    }
+function cityKey(kota) {
+  var v = normalizeText(kota);
+  if (NATIONAL_ALIASES_NORM.indexOf(v) !== -1) return 'national';
+  return v.replace(/^kota\s+/, '');
+}
+function isNationalCity(kota) { return cityKey(kota) === 'national'; }
+function displayCityLabel(kota) { return isNationalCity(kota) ? NATIONAL_DISPLAY_NAME : kota; }
 
-    function displayCityLabel(kota) {
-      return isNationalCity(kota) ? NATIONAL_DISPLAY_NAME : kota;
-    }
+function rankBadge(i, total) {
+  var t = total > 1 ? i / (total - 1) : 0;
+  var rgb = [0, 1, 2].map(function (k) {
+    return Math.round(RANK_COLOR_START[k] + (RANK_COLOR_END[k] - RANK_COLOR_START[k]) * t);
+  });
+  var bg = 'rgb(' + rgb.join(',') + ')';
+  var textColor = t < 0.55 ? '#fff' : 'var(--ira-red-dark)';
+  return '<span class="rank-num" style="background:' + bg + ';color:' + textColor + '">' + (i + 1) + '</span>';
+}
 
-    // Badge angka rank dengan warna gradasi (tanpa emoji). t=0 di posisi teratas.
-    function rankBadge(i, total) {
-      var t = total > 1 ? i / (total - 1) : 0;
-      var rgb = [0, 1, 2].map(function (k) {
-        return Math.round(RANK_COLOR_START[k] + (RANK_COLOR_END[k] - RANK_COLOR_START[k]) * t);
-      });
-      var bg = 'rgb(' + rgb.join(',') + ')';
-      var textColor = t < 0.55 ? '#fff' : 'var(--ira-red-dark)';
-      return '<span class="rank-num" style="background:' + bg + ';color:' + textColor + '">' + (i + 1) + '</span>';
-    }
+function onLoadError(err) {
+  document.getElementById('loading').style.display = 'none';
+  var box = document.getElementById('errorBox');
+  box.style.display = 'block';
+  box.textContent = 'Gagal memuat data: ' + (err && err.message ? err.message : err);
+}
 
-    function onLoadError(err) {
-      document.getElementById('loading').style.display = 'none';
-      var box = document.getElementById('errorBox');
-      box.style.display = 'block';
-      box.textContent = 'Gagal memuat data: ' + (err && err.message ? err.message : err);
-    }
+function onDataLoaded(data) {
+  FUNNEL_METRICS = data.funnelMetrics || [];
+  CHANNEL_METRIC_CONFIG = data.channelMetricConfig || {};
+  CHANNEL_DETAIL_COLUMNS = data.channelDetailColumns || {};
+  CITY_ORDER = data.cityOrder || [];
+  EXEC_SUMMARY_DEFS = data.execSummaryDefs || [];
+  ROWS_PER_PAGE = data.rowsPerPage || 5;
+  CHANNELS = Object.keys(CHANNEL_METRIC_CONFIG);
+  if (data.nationalAliases && data.nationalAliases.length) NATIONAL_ALIASES = data.nationalAliases;
+  if (data.nationalDisplayName) NATIONAL_DISPLAY_NAME = data.nationalDisplayName;
+  NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
 
-    function onDataLoaded(data) {
-      // config dari server
-      FUNNEL_METRICS = data.funnelMetrics || [];
-      CHANNEL_METRIC_CONFIG = data.channelMetricConfig || {};
-      CHANNEL_DETAIL_COLUMNS = data.channelDetailColumns || {};
-      CITY_ORDER = data.cityOrder || [];
-      EXEC_SUMMARY_DEFS = data.execSummaryDefs || [];
-      ROWS_PER_PAGE = data.rowsPerPage || 5;
-      CHANNELS = Object.keys(CHANNEL_METRIC_CONFIG);
+  ALL_ROWS = data.rows || [];
+  GA_ROWS = data.gaRows || [];
+  GA_TOTAL_ROWS = data.gaTotalRows || [];
+  GA_CUM_TOTAL_ROWS = data.gaCumTotalRows || [];
+  GA_CUM_CITY_ROWS = data.gaCumCityRows || [];
+  PAYMENT_DETAIL_ROWS = data.paymentDetailRows || [];
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('contentBody').style.display = 'block';
+  CITY_LIST = buildCityList();
+  renderSidebar();
+  initSummaryDatesDefault();
+  renderAll();
+}
 
-      if (data.nationalAliases && data.nationalAliases.length) NATIONAL_ALIASES = data.nationalAliases;
-      if (data.nationalDisplayName) NATIONAL_DISPLAY_NAME = data.nationalDisplayName;
-      NATIONAL_ALIASES_NORM = NATIONAL_ALIASES.map(normalizeText);
+// ==================== SIDEBAR ====================
+function buildCityList() {
+  var presentByKey = {};
+  ALL_ROWS.forEach(function (r) {
+    if (!r.kota) return;
+    var k = cityKey(r.kota);
+    if (!presentByKey[k]) presentByKey[k] = r.kota;
+  });
+  var list = [];
+  (CITY_ORDER || []).forEach(function (c) {
+    var k = cityKey(c);
+    if (presentByKey[k]) { list.push(presentByKey[k]); delete presentByKey[k]; }
+  });
+  list = list.concat(Object.keys(presentByKey).sort().map(function (k) { return presentByKey[k]; }));
+  var natIdx = -1;
+  for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i])) { natIdx = i; break; } }
+  if (natIdx !== -1) { var nat = list.splice(natIdx, 1)[0]; list.push(nat); }
+  return list;
+}
 
-      ALL_ROWS = data.rows || [];
-      GA_ROWS = data.gaRows || [];
-      NON_COVERAGE_ROWS = data.tidakTercoverPaymentRows || [];
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('appShell').style.display = 'block';
-      document.getElementById('contentBody').style.display = 'block';
-      setLastUpdated();
-      CITY_LIST = buildCityList();
-      renderSidebar();
-      initSummaryDatesDefault();
-      renderAll();
-    }
-
-    function setLastUpdated() {
-      var now = new Date();
-      var pad = function (n) { return ('0' + n).slice(-2); };
-      document.getElementById('lastUpdated').textContent =
-        'Diperbarui ' + pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear() +
-        ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
-    }
-
-    // ==================== SIDEBAR (KOTA) ====================
-
-    function buildCityList() {
-      var presentByKey = {};
-      ALL_ROWS.forEach(function (r) {
-        if (!r.kota) return;
-        var k = cityKey(r.kota);
-        if (!presentByKey[k]) presentByKey[k] = r.kota;
-      });
-
-      var list = [];
-      (CITY_ORDER || []).forEach(function (c) {
-        var k = cityKey(c);
-        if (presentByKey[k]) { list.push(presentByKey[k]); delete presentByKey[k]; }
-      });
-      list = list.concat(Object.keys(presentByKey).sort().map(function (k) { return presentByKey[k]; }));
-
-      var natIdx = -1;
-      for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i])) { natIdx = i; break; } }
-      if (natIdx !== -1) {
-        var nat = list.splice(natIdx, 1)[0];
-        list.push(nat);
-      }
-      return list;
-    }
-
-    function renderSidebar() {
-      var items = [{ key: 'summary', label: 'Summary' }, { key: 'all', label: 'Semua Kota' }].concat(
-        CITY_LIST.map(function (c) { return { key: c, label: displayCityLabel(c) }; })
-      );
-      var el = document.getElementById('sidebarList');
-      el.innerHTML = items.map(function (it) {
-        var active = it.key === currentView;
-        return '<div class="sidebar-item' + (active ? ' active' : '') + '" data-view="' + escapeAttr(it.key) + '">' +
-          escapeHtml(it.label) + '</div>';
-      }).join('');
-      el.querySelectorAll('.sidebar-item').forEach(function (item) {
-        item.addEventListener('click', function () {
-          currentView = item.getAttribute('data-view');
-          channelPage = {};
-          renderSidebar();
-          renderAll();
-        });
-      });
-    }
-
-    // ==================== FILTER ====================
-
-    function bindFilterEvents() {
-      document.getElementById('dateFrom').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
-      document.getElementById('dateTo').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
-      document.getElementById('resetBtn').addEventListener('click', function () {
-        document.getElementById('dateFrom').value = '';
-        document.getElementById('dateTo').value = '';
-        activePreset = 'all';
-        setActivePresetBtn();
-        channelPage = {};
-        renderAll();
-      });
-      document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
-      document.querySelectorAll('.preset-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          applyPreset(btn.getAttribute('data-preset'));
-        });
-      });
-      setActivePresetBtn();
-
-      // ---------- filter khusus page Summary (growth periode A vs B) ----------
-      ['periodAFrom', 'periodATo', 'periodBFrom', 'periodBTo'].forEach(function (id) {
-        document.getElementById(id).addEventListener('change', function () { renderGrowthSummary(); });
-      });
-      document.getElementById('summaryResetBtn').addEventListener('click', function () {
-        initSummaryDatesDefault(true);
-        renderGrowthSummary();
-      });
-      document.getElementById('summaryDownloadBtn').addEventListener('click', handleSummaryPdfClick);
-    }
-
-    function applyPreset(preset) {
-      activePreset = preset;
-      setActivePresetBtn();
-      var today = new Date();
-      var from = '', to = '';
-      if (preset === 'all') {
-        from = ''; to = '';
-      } else if (preset === '7' || preset === '30') {
-        var days = preset === '7' ? 6 : 29;
-        var start = new Date(today);
-        start.setDate(start.getDate() - days);
-        from = toISO(start); to = toISO(today);
-      } else if (preset === 'month') {
-        var first = new Date(today.getFullYear(), today.getMonth(), 1);
-        from = toISO(first); to = toISO(today);
-      }
-      document.getElementById('dateFrom').value = from;
-      document.getElementById('dateTo').value = to;
+function renderSidebar() {
+  var items = [{ key: 'summary', label: 'Summary' }, { key: 'all', label: 'Semua Kota' }].concat(
+    CITY_LIST.map(function (c) { return { key: c, label: displayCityLabel(c) }; })
+  );
+  var el = document.getElementById('sidebarList');
+  el.innerHTML = items.map(function (it) {
+    var active = it.key === currentView;
+    return '<div class="sidebar-item' + (active ? ' active' : '') + '" data-view="' + escapeAttr(it.key) + '">' + escapeHtml(it.label) + '</div>';
+  }).join('');
+  el.querySelectorAll('.sidebar-item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      currentView = item.getAttribute('data-view');
       channelPage = {};
+      renderSidebar();
       renderAll();
+    });
+  });
+}
+
+// ==================== FILTER ====================
+function bindFilterEvents() {
+  document.getElementById('dateFrom').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
+  document.getElementById('dateTo').addEventListener('change', function () { activePreset = null; setActivePresetBtn(); channelPage = {}; renderAll(); });
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    activePreset = 'all';
+    setActivePresetBtn();
+    channelPage = {};
+    renderAll();
+  });
+  document.getElementById('downloadBtn').addEventListener('click', handleDownloadClick);
+  document.querySelectorAll('.preset-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyPreset(btn.getAttribute('data-preset')); });
+  });
+  setActivePresetBtn();
+
+  ['periodAFrom', 'periodATo', 'periodBFrom', 'periodBTo'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () { renderGrowthSummary(); });
+  });
+  document.getElementById('summaryResetBtn').addEventListener('click', function () {
+    initSummaryDatesDefault(true);
+    renderGrowthSummary();
+  });
+  document.getElementById('summaryDownloadBtn').addEventListener('click', handleSummaryPdfClick);
+}
+
+function applyPreset(preset) {
+  activePreset = preset;
+  setActivePresetBtn();
+  var today = new Date();
+  var from = '', to = '';
+  if (preset === '7' || preset === '30') {
+    var days = preset === '7' ? 6 : 29;
+    var start = new Date(today);
+    start.setDate(start.getDate() - days);
+    from = toISO(start); to = toISO(today);
+  } else if (preset === 'month') {
+    var first = new Date(today.getFullYear(), today.getMonth(), 1);
+    from = toISO(first); to = toISO(today);
+  }
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value = to;
+  channelPage = {};
+  renderAll();
+}
+
+function setActivePresetBtn() {
+  document.querySelectorAll('.preset-btn').forEach(function (btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
+  });
+}
+
+function toISO(d) {
+  var m = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+function addDaysISO(iso, days) {
+  var d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return toISO(d);
+}
+
+function scopedFilter_(list, byCity) {
+  var from = document.getElementById('dateFrom').value;
+  var to = document.getElementById('dateTo').value;
+  var viewKey = (byCity && currentView !== 'all') ? cityKey(currentView) : '';
+  return list.filter(function (r) {
+    if (from && r.tanggal && r.tanggal < from) return false;
+    if (to && r.tanggal && r.tanggal > to) return false;
+    if (viewKey && cityKey(r.kota) !== viewKey) return false;
+    return true;
+  });
+}
+function getScopedRows() { return scopedFilter_(ALL_ROWS, true); }
+function getScopedGaRows() { return scopedFilter_(GA_ROWS, true); }
+function getScopedGaTotalRows() { return scopedFilter_(GA_TOTAL_ROWS, false); }
+function getScopedPaymentDetailRows() { return scopedFilter_(PAYMENT_DETAIL_ROWS, true); }
+
+// ==================== GA: KUMULATIF vs NON-KUMULATIF ====================
+// Tanpa filter tanggal -> kumulatif (snapshot terbaru). Dengan filter tanggal -> non-kumulatif.
+function isDateFilterActive() {
+  return !!(document.getElementById('dateFrom').value || document.getElementById('dateTo').value);
+}
+
+function latestCumTotal_() {
+  var best = null;
+  GA_CUM_TOTAL_ROWS.forEach(function (r) {
+    if (!r.tanggal) return;
+    if (!best || r.tanggal >= best.tanggal) best = r;
+  });
+  return { allUsers: best ? (best.allUsers || 0) : 0, eventCount: best ? (best.eventCount || 0) : 0 };
+}
+
+function gaByCityCumulative_() {
+  var latest = {};
+  GA_CUM_CITY_ROWS.forEach(function (r) {
+    if (!r.kota || !r.tanggal) return;
+    var k = cityKey(r.kota);
+    if (!latest[k] || r.tanggal >= latest[k].tanggal) latest[k] = r;
+  });
+  var map = {};
+  Object.keys(latest).forEach(function (k) {
+    map[k] = { kota: latest[k].kota, allUsers: latest[k].allUsers || 0, eventCount: latest[k].eventCount || 0 };
+  });
+  return map;
+}
+
+function gaByCityFromRows_(gaRows) {
+  var map = {};
+  (gaRows || []).forEach(function (r) {
+    if (!r.kota) return;
+    var k = cityKey(r.kota);
+    if (!map[k]) map[k] = { kota: r.kota, allUsers: 0, eventCount: 0 };
+    map[k].allUsers += r.allUsers || 0;
+    map[k].eventCount += r.eventCount || 0;
+  });
+  return map;
+}
+
+function getGaByCityForCurrentMode_() {
+  return isDateFilterActive() ? gaByCityFromRows_(lastScopedGa) : gaByCityCumulative_();
+}
+
+function getGaFiguresForView_() {
+  var viewKey = currentView === 'all' ? '' : cityKey(currentView);
+  if (!isDateFilterActive()) {
+    if (!viewKey) return latestCumTotal_();
+    var c = gaByCityCumulative_()[viewKey];
+    return { allUsers: c ? c.allUsers : 0, eventCount: c ? c.eventCount : 0 };
+  }
+  if (!viewKey) {
+    return { allUsers: sum(lastScopedGaTotal, 'allUsers'), eventCount: sum(lastScopedGaTotal, 'eventCount') };
+  }
+  return { allUsers: sum(lastScopedGa, 'allUsers'), eventCount: sum(lastScopedGa, 'eventCount') };
+}
+
+// ==================== DOWNLOAD DATA ====================
+function handleDownloadClick() {
+  var btn = document.getElementById('downloadBtn');
+  var originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Menyiapkan file…';
+  apiGet('export')
+    .then(function (result) {
+      triggerFileDownload(result.base64, result.fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    })
+    .catch(function (err) {
+      alert('Gagal download: ' + (err && err.message ? err.message : err));
+    })
+    .then(function () {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    });
+}
+
+function triggerFileDownload(base64, fileName, mimeType) {
+  var byteChars = atob(base64);
+  var byteNumbers = new Array(byteChars.length);
+  for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+  var blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType || 'application/octet-stream' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+// ==================== RENDER: TOP LEVEL ====================
+function renderAll() {
+  if (!ALL_ROWS.length && !GA_ROWS.length && !CHANNELS.length) return;
+
+  var isSummary = currentView === 'summary';
+  document.getElementById('regularFiltersBar').style.display = isSummary ? 'none' : 'flex';
+  document.getElementById('summaryFiltersBar').style.display = isSummary ? 'flex' : 'none';
+  document.getElementById('summaryView').style.display = isSummary ? 'block' : 'none';
+  document.getElementById('mainDashboardView').style.display = isSummary ? 'none' : 'block';
+
+  if (isSummary) { renderGrowthSummary(); return; }
+
+  lastScopedRows = getScopedRows();
+  lastScopedGa = getScopedGaRows();
+  lastScopedGaTotal = getScopedGaTotalRows();
+  lastScopedPaymentDetail = getScopedPaymentDetailRows();
+  updateScopeTitles();
+
+  var gaFigures = getGaFiguresForView_();
+  renderMainExecSummary(document.getElementById('mainExecSummary'), lastScopedRows, gaFigures);
+  renderPaymentDetail(document.getElementById('paymentDetailWrap'), lastScopedPaymentDetail);
+
+  var isAllCities = currentView === 'all';
+  document.getElementById('allCitiesView').style.display = isAllCities ? 'block' : 'none';
+  document.getElementById('perCityView').style.display = isAllCities ? 'none' : 'block';
+
+  if (isAllCities) {
+    renderDailyChart(document.getElementById('dailyChartWrap'), lastScopedRows, lastScopedGaTotal);
+    renderSpotlights(document.getElementById('spotlightWrap'), lastScopedRows);
+    renderCityBreakdownTable(document.getElementById('cityBreakdownWrap'), lastScopedRows, getGaByCityForCurrentMode_(), gaFigures);
+    renderChannelLeaderboard(document.getElementById('channelRankingWrap'), lastScopedRows);
+  } else {
+    renderChannelCards(lastScopedRows);
+  }
+}
+
+function updateScopeTitles() {
+  var scopeLabel = currentView === 'all' ? 'Semua Kota' : displayCityLabel(currentView);
+  document.getElementById('scopeTitleSummary').textContent = 'Executive Summary — ' + scopeLabel;
+  document.getElementById('scopeTitleDetail').textContent = 'Detail per Channel — ' + scopeLabel;
+  document.getElementById('paymentDetailTitle').textContent = 'Detail Payment — ' + scopeLabel;
+}
+
+function sum(rows, key) { return rows.reduce(function (acc, r) { return acc + (r[key] || 0); }, 0); }
+function fmtNum(n) { return Math.round(n).toLocaleString('id-ID'); }
+
+function isMetricTracked(channel, headers) {
+  var applicable = CHANNEL_METRIC_CONFIG[channel] || [];
+  return headers.every(function (h) { return applicable.indexOf(h) !== -1; });
+}
+
+// ---------- kartu skor ----------
+function orderExecDefs_(defs) {
+  var slots = [], gaDefs = [];
+  defs.forEach(function (d, i) { if (d.source === 'ga') { slots.push(i); gaDefs.push(d); } });
+  gaDefs.sort(function (a, b) {
+    var ia = GA_CARD_ORDER.indexOf(a.gaKey), ib = GA_CARD_ORDER.indexOf(b.gaKey);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  var out = defs.slice();
+  slots.forEach(function (idx, n) { out[idx] = gaDefs[n]; });
+  return out;
+}
+
+function computeExecMetrics(rows, channel, gaFigures) {
+  var defs = EXEC_SUMMARY_DEFS.filter(function (def) {
+    if (channel) {
+      if (def.mainOnly || def.source === 'ga') return false;
+      if (def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1) return false;
     }
-
-    function setActivePresetBtn() {
-      document.querySelectorAll('.preset-btn').forEach(function (btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
-      });
+    return true;
+  });
+  return orderExecDefs_(defs).map(function (def) {
+    if (def.source === 'ga') {
+      var gaValue = (gaFigures && gaFigures[def.gaKey]) || 0;
+      return { label: def.label, value: fmtNum(gaValue), dash: false, ga: true };
     }
+    var tracked = true;
+    if (channel) tracked = isMetricTracked(channel, def.requires || []);
+    if (!tracked) return { label: def.label, value: '–', dash: true };
+    return { label: def.label, value: fmtNum(sum(rows, def.key)), dash: false, payment: def.key === 'payment' };
+  });
+}
 
-    function toISO(d) {
-      var m = ('0' + (d.getMonth() + 1)).slice(-2);
-      var day = ('0' + d.getDate()).slice(-2);
-      return d.getFullYear() + '-' + m + '-' + day;
+function renderCards_(container, metrics, mini) {
+  container.className = 'summary-grid' + (mini ? ' mini' : '');
+  container.innerHTML = metrics.map(function (m) {
+    var extraClass = m.ga ? ' kpi-ga' : (m.payment ? ' kpi-payment' : '');
+    return '<div class="kpi-card' + extraClass + '"><div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
+      '<div class="kpi-value' + (m.dash ? ' is-dash' : '') + '">' + m.value + '</div></div>';
+  }).join('');
+}
+
+function renderExecSummaryCards(container, rows, channel, mini) {
+  renderCards_(container, computeExecMetrics(rows, channel, null), mini);
+}
+function renderMainExecSummary(container, rows, gaFigures) {
+  renderCards_(container, computeExecMetrics(rows, null, gaFigures), false);
+}
+function renderTiktokShopSummary(container, rows) {
+  container.className = 'summary-grid mini';
+  container.innerHTML = '<div class="kpi-card"><div class="kpi-label">Total Payment</div><div class="kpi-value">' + fmtNum(sum(rows, 'payment')) + '</div></div>';
+}
+
+// ==================== DETAIL PAYMENT ====================
+var PAYMENT_DETAIL_DEFS = [
+  { cat: 'tercoverPayment', label: 'Tercover Payment', cls: 'kpi-pay-ok' },
+  { cat: 'tercoverBelum', label: 'Tercover Belum Payment', cls: 'kpi-pay-wait' },
+  { cat: 'tidakPayment', label: 'Tidak Tercover Payment', cls: 'kpi-pay-ok' },
+  { cat: 'tidakBelum', label: 'Tidak Tercover Belum Payment', cls: 'kpi-pay-wait' }
+];
+
+function renderPaymentDetail(container, rows) {
+  if (!container) return;
+  var counts = {};
+  PAYMENT_DETAIL_DEFS.forEach(function (d) { counts[d.cat] = 0; });
+  (rows || []).forEach(function (r) { if (counts[r.cat] !== undefined) counts[r.cat] += 1; });
+  container.className = 'summary-grid';
+  container.innerHTML = PAYMENT_DETAIL_DEFS.map(function (d) {
+    return '<div class="kpi-card ' + d.cls + '"><div class="kpi-label">' + escapeHtml(d.label) + '</div>' +
+      '<div class="kpi-value">' + fmtNum(counts[d.cat]) + '</div>' +
+      (d.sub ? '<div class="kpi-sub">' + escapeHtml(d.sub) + '</div>' : '') + '</div>';
+  }).join('');
+}
+
+// ==================== SEMUA KOTA — RINGKASAN PER KOTA ====================
+function computeCityBreakdown(rows, gaByCity) {
+  var byCity = {};
+  function ensureCity(kota) {
+    var k = cityKey(kota);
+    if (!byCity[k]) {
+      byCity[k] = { kota: kota, impressions: 0, waInbound: 0, registrationComplete: 0, payment: 0, covered: 0, activation: 0, allUsers: 0, eventCount: 0 };
     }
+    return byCity[k];
+  }
+  rows.forEach(function (r) {
+    if (!r.kota) return;
+    var c = ensureCity(r.kota);
+    c.impressions += r.impressions || 0;
+    c.waInbound += r.waInbound || 0;
+    c.registrationComplete += r.registrationComplete || 0;
+    c.payment += r.payment || 0;
+    c.covered += r.covered || 0;
+    c.activation += r.activation || 0;
+  });
+  Object.keys(gaByCity || {}).forEach(function (k) {
+    var g = gaByCity[k];
+    if (!g || !g.kota) return;
+    var c = ensureCity(g.kota);
+    c.allUsers = g.allUsers || 0;
+    c.eventCount = g.eventCount || 0;
+  });
+  var list = CITY_LIST.map(function (kota) {
+    var c = byCity[cityKey(kota)];
+    if (c) c.kota = kota;
+    return c;
+  }).filter(Boolean);
+  list.forEach(function (c) { c.notCovered = Math.max(0, c.registrationComplete - c.covered); });
+  list.sort(function (a, b) { return b.registrationComplete - a.registrationComplete; });
+  var natIdx = -1;
+  for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i].kota)) { natIdx = i; break; } }
+  if (natIdx !== -1) { var nat = list.splice(natIdx, 1)[0]; list.push(nat); }
+  return list;
+}
 
-    function addDaysISO(iso, days) {
-      var d = new Date(iso + 'T00:00:00');
-      d.setDate(d.getDate() + days);
-      return toISO(d);
-    }
+function renderCityBreakdownTable(container, rows, gaByCity, gaTotals) {
+  var data = computeCityBreakdown(rows, gaByCity);
+  if (data.length === 0) {
+    container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
+    return;
+  }
+  var totals = data.reduce(function (acc, c) {
+    acc.impressions += c.impressions; acc.allUsers += c.allUsers; acc.eventCount += c.eventCount;
+    acc.waInbound += c.waInbound; acc.registrationComplete += c.registrationComplete;
+    acc.covered += c.covered; acc.notCovered += c.notCovered; acc.payment += c.payment; acc.activation += c.activation;
+    return acc;
+  }, { impressions: 0, allUsers: 0, eventCount: 0, waInbound: 0, registrationComplete: 0, covered: 0, notCovered: 0, payment: 0, activation: 0 });
 
-    function getScopedRows() {
-      var from = document.getElementById('dateFrom').value;
-      var to = document.getElementById('dateTo').value;
-      var viewKey = currentView === 'all' ? '' : cityKey(currentView);
-      return ALL_ROWS.filter(function (r) {
-        if (from && r.tanggal && r.tanggal < from) return false;
-        if (to && r.tanggal && r.tanggal > to) return false;
-        if (viewKey && cityKey(r.kota) !== viewKey) return false;
-        return true;
-      });
-    }
+  if (gaTotals) {
+    totals.allUsers = gaTotals.allUsers || 0;
+    totals.eventCount = gaTotals.eventCount || 0;
+  }
 
-    function getScopedGaRows() {
-      var from = document.getElementById('dateFrom').value;
-      var to = document.getElementById('dateTo').value;
-      var viewKey = currentView === 'all' ? '' : cityKey(currentView);
-      return GA_ROWS.filter(function (r) {
-        if (from && r.tanggal && r.tanggal < from) return false;
-        if (to && r.tanggal && r.tanggal > to) return false;
-        if (viewKey && cityKey(r.kota) !== viewKey) return false;
-        return true;
-      });
-    }
+  var rowsHtml = data.map(function (c, i) {
+    return '<tr>' +
+      '<td class="rank-cell">' + rankBadge(i, data.length) + '</td>' +
+      '<td>' + escapeHtml(displayCityLabel(c.kota)) + '</td>' +
+      '<td class="num">' + fmtNum(c.impressions) + '</td>' +
+      '<td class="num">' + fmtNum(c.eventCount) + '</td>' +
+      '<td class="num">' + fmtNum(c.allUsers) + '</td>' +
+      '<td class="num">' + fmtNum(c.waInbound) + '</td>' +
+      '<td class="num bar-num-cell"><span class="cell-value">' + fmtNum(c.registrationComplete) + '</span></td>' +
+      '<td class="num">' + fmtNum(c.notCovered) + '</td>' +
+      '<td class="num">' + fmtNum(c.covered) + '</td>' +
+      '<td class="num">' + fmtNum(c.payment) + '</td>' +
+      '<td class="num">' + fmtNum(c.activation) + '</td></tr>';
+  }).join('');
 
-    // Baris "Tidak Tercover" berstatus SUCCEEDED yang lolos filter tanggal &
-    // kota aktif — dipakai untuk kartu "Total Payment Non Coverage".
-    function getScopedNonCoverageRows() {
-      var from = document.getElementById('dateFrom').value;
-      var to = document.getElementById('dateTo').value;
-      var viewKey = currentView === 'all' ? '' : cityKey(currentView);
-      return NON_COVERAGE_ROWS.filter(function (r) {
-        if (from && r.tanggal && r.tanggal < from) return false;
-        if (to && r.tanggal && r.tanggal > to) return false;
-        if (viewKey && cityKey(r.kota) !== viewKey) return false;
-        return true;
-      });
-    }
+  var totalRow = '<tr class="total-row"><td></td><td>Total</td>' +
+    '<td class="num">' + fmtNum(totals.impressions) + '</td>' +
+    '<td class="num">' + fmtNum(totals.eventCount) + '</td>' +
+    '<td class="num">' + fmtNum(totals.allUsers) + '</td>' +
+    '<td class="num">' + fmtNum(totals.waInbound) + '</td>' +
+    '<td class="num">' + fmtNum(totals.registrationComplete) + '</td>' +
+    '<td class="num">' + fmtNum(totals.notCovered) + '</td>' +
+    '<td class="num">' + fmtNum(totals.covered) + '</td>' +
+    '<td class="num">' + fmtNum(totals.payment) + '</td>' +
+    '<td class="num">' + fmtNum(totals.activation) + '</td></tr>';
 
-    // ==================== DOWNLOAD DATA (Tercover & Tidak Tercover) ====================
+  container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th></th><th>Kota</th><th class="num">Impression</th>' +
+    '<th class="num">' + escapeHtml(GA_LABEL_EVENTS) + '</th><th class="num">' + escapeHtml(GA_LABEL_USERS) + '</th>' +
+    '<th class="num">WA Inbound</th><th class="num">Registrasi</th><th class="num">Tidak Tercover</th>' +
+    '<th class="num">Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
+    '</tr></thead><tbody>' + rowsHtml + totalRow + '</tbody></table></div>';
+}
 
-    function handleDownloadClick() {
-      var btn = document.getElementById('downloadBtn');
-      var originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.textContent = 'Menyiapkan file…';
+// ---------- spotlight ----------
+function renderSpotlights(container, rows) {
+  var cityData = computeCityBreakdown(rows);
+  var topCity = null;
+  for (var ci = 0; ci < cityData.length; ci++) {
+    if (!isNationalCity(cityData[ci].kota) && cityData[ci].registrationComplete > 0) { topCity = cityData[ci]; break; }
+  }
+  var channelData = computeChannelRanking(rows);
+  var topChannel = null;
+  for (var i = 0; i < channelData.length; i++) {
+    if (channelData[i].registrationComplete !== null && channelData[i].registrationComplete > 0) { topChannel = channelData[i]; break; }
+  }
 
-      apiGet('export')
-        .then(function (result) {
-          triggerFileDownload(result.base64, result.fileName);
-          btn.disabled = false;
-          btn.innerHTML = originalHtml;
-        })
-        .catch(function (err) {
-          alert('Gagal download: ' + (err && err.message ? err.message : err));
-          btn.disabled = false;
-          btn.innerHTML = originalHtml;
-        });
-    }
+  var cityIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 1114 0c0 5.314-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
+  var channelIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"></path><path d="M15 7h5v5"></path></svg>';
 
-    function triggerFileDownload(base64, fileName) {
-      var byteChars = atob(base64);
-      var byteNumbers = new Array(byteChars.length);
-      for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      var byteArray = new Uint8Array(byteNumbers);
-      var blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    }
+  var cityBody = topCity
+    ? '<div class="spotlight-value">' + escapeHtml(displayCityLabel(topCity.kota)) + '</div><div class="spotlight-sub">' + fmtNum(topCity.registrationComplete) + ' registrasi</div>'
+    : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
+  var channelBody = topChannel
+    ? '<div class="spotlight-value">' + escapeHtml(topChannel.channel) + '</div><div class="spotlight-sub">' + fmtNum(topChannel.registrationComplete) + ' registrasi</div>'
+    : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
 
-    // ==================== RENDER: TOP LEVEL ====================
+  container.innerHTML =
+    '<div class="spotlight-card spotlight-city"><div class="spotlight-icon">' + cityIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Kota Terbaik</div>' + cityBody + '</div></div>' +
+    '<div class="spotlight-card spotlight-channel"><div class="spotlight-icon">' + channelIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Channel Terbaik</div>' + channelBody + '</div></div>';
+}
 
-    function renderAll() {
-      // sebelum data selesai dimuat, belum ada yang bisa dirender
-      if (!ALL_ROWS.length && !GA_ROWS.length && !CHANNELS.length) return;
+// ==================== GRAFIK PERFORMA HARIAN ====================
+var DAILY_CHART_METRICS = [
+  { key: 'impressions', label: 'Impression', color: '#D2122E' },
+  { key: 'registrationComplete', label: 'Registrasi', color: '#1E8E5A' },
+  { key: 'payment', label: 'Payment', color: '#B98B3E' },
+  { key: 'allUsers', label: 'Web Visit', color: '#2E6FDB' },
+  { key: 'eventCount', label: 'Event Count', color: '#2AA79A' },
+  { key: 'waInbound', label: 'WA Inbound', color: '#8E0E22' }
+];
+var dailyChartVisible = {};
+DAILY_CHART_METRICS.forEach(function (m) { dailyChartVisible[m.key] = true; });
+var dailyChartSeriesCache = [];
 
-      var isSummary = currentView === 'summary';
-      document.getElementById('regularFiltersBar').style.display = isSummary ? 'none' : 'flex';
-      document.getElementById('summaryFiltersBar').style.display = isSummary ? 'flex' : 'none';
-      document.getElementById('summaryView').style.display = isSummary ? 'block' : 'none';
-      document.getElementById('mainDashboardView').style.display = isSummary ? 'none' : 'block';
+function computeDailySeries(rows, gaRows) {
+  var byDate = {};
+  function ensureDate(date) {
+    if (!byDate[date]) byDate[date] = { date: date, impressions: 0, registrationComplete: 0, payment: 0, waInbound: 0, allUsers: 0, eventCount: 0 };
+    return byDate[date];
+  }
+  (rows || []).forEach(function (r) {
+    if (!r.tanggal) return;
+    var d = ensureDate(r.tanggal);
+    d.impressions += r.impressions || 0;
+    d.registrationComplete += r.registrationComplete || 0;
+    d.payment += r.payment || 0;
+    d.waInbound += r.waInbound || 0;
+  });
+  (gaRows || []).forEach(function (r) {
+    if (!r.tanggal) return;
+    var d = ensureDate(r.tanggal);
+    d.allUsers += r.allUsers || 0;
+    d.eventCount += r.eventCount || 0;
+  });
+  return Object.keys(byDate).sort().map(function (k) { return byDate[k]; });
+}
 
-      if (isSummary) {
-        renderGrowthSummary();
-        return;
-      }
+function fmtAxisNum(n) {
+  n = Math.round(n);
+  var abs = Math.abs(n);
+  if (abs >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'jt';
+  if (abs >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'rb';
+  return fmtNum(n);
+}
 
-      lastScopedRows = getScopedRows();
-      lastScopedGa = getScopedGaRows();
-      lastScopedNonCoverage = getScopedNonCoverageRows();
-      updateScopeTitles();
-      renderMainExecSummary(document.getElementById('mainExecSummary'), lastScopedRows, lastScopedGa, lastScopedNonCoverage);
+function formatTanggalShort(iso) {
+  if (!iso) return '';
+  var parts = String(iso).split('-');
+  if (parts.length !== 3) return String(iso);
+  return parts[2] + '/' + parts[1];
+}
 
-      var isAllCities = currentView === 'all';
-      document.getElementById('allCitiesView').style.display = isAllCities ? 'block' : 'none';
-      document.getElementById('perCityView').style.display = isAllCities ? 'none' : 'block';
+function renderDailyChart(container, rows, gaRows) {
+  if (!container) return;
+  dailyChartSeriesCache = computeDailySeries(rows, gaRows);
+  container.innerHTML = '<div class="daily-chart-toggles" id="dailyChartToggles"></div><div class="daily-chart-wrap" id="dailyChartWrapInner"></div>';
+  renderDailyChartToggles();
+  drawDailyChart();
+}
 
-      if (isAllCities) {
-        renderDailyChart(document.getElementById('dailyChartWrap'), lastScopedRows, lastScopedGa);
-        renderSpotlights(document.getElementById('spotlightWrap'), lastScopedRows);
-        renderCityBreakdownTable(document.getElementById('cityBreakdownWrap'), lastScopedRows, lastScopedGa);
-        renderChannelLeaderboard(document.getElementById('channelRankingWrap'), lastScopedRows);
-      } else {
-        renderChannelCards(lastScopedRows);
-      }
-    }
-
-    function updateScopeTitles() {
-      var scopeLabel = currentView === 'all' ? 'Semua Kota' : displayCityLabel(currentView);
-      document.getElementById('scopeTitleSummary').textContent = 'Executive Summary — ' + scopeLabel;
-      document.getElementById('scopeTitleDetail').textContent = 'Detail per Channel — ' + scopeLabel;
-    }
-
-    function sum(rows, key) {
-      return rows.reduce(function (acc, r) { return acc + (r[key] || 0); }, 0);
-    }
-
-    function fmtNum(n) { return Math.round(n).toLocaleString('id-ID'); }
-    function fmtCurrency(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
-
-    function isMetricTracked(channel, headers) {
-      var applicable = CHANNEL_METRIC_CONFIG[channel] || [];
-      return headers.every(function (h) { return applicable.indexOf(h) !== -1; });
-    }
-
-    // ---------- kartu skor (dipakai di ringkasan atas & tiap channel) ----------
-
-    function orderExecDefs_(defs) {
-      var slots = [];
-      var gaDefs = [];
-      defs.forEach(function (d, i) {
-        if (d.source === 'ga') { slots.push(i); gaDefs.push(d); }
-      });
-      gaDefs.sort(function (a, b) {
-        var ia = GA_CARD_ORDER.indexOf(a.gaKey);
-        var ib = GA_CARD_ORDER.indexOf(b.gaKey);
-        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-      });
-      var out = defs.slice();
-      slots.forEach(function (idx, n) { out[idx] = gaDefs[n]; });
-      return out;
-    }
-
-    // Urutan kartu = urutan EXEC_SUMMARY_DEFS (config di Code.gs), dengan
-    // kartu GA diurutkan lewat orderExecDefs_().
-    //  - channel diisi  -> kartu mini per channel: def "mainOnly" & sumber GA/non-coverage dilewati
-    //  - channel kosong -> summary utama: semua def dipakai
-    //
-    // Penanganan khusus:
-    //  - source 'ga'                 -> jumlah dari baris GA (gaRows)
-    //  - source 'nonCoveragePayment' -> BANYAKNYA baris "Tidak Tercover" yang
-    //    Status Payment-nya SUCCEEDED (nonCoverageRows), sesuai filter tanggal & kota aktif
-    //  - key 'paymentCoverage'       -> Total Payment (Daily Tracker, field "payment")
-    //    DIKURANGI Total Payment Non Coverage (banyaknya baris nonCoverageRows)
-    function computeExecMetrics(rows, channel, gaRows, nonCoverageRows) {
-      var defs = EXEC_SUMMARY_DEFS.filter(function (def) {
-        if (channel) {
-          if (def.mainOnly || def.source === 'ga' || def.source === 'nonCoveragePayment') return false;
-          if (def.excludeChannels && def.excludeChannels.indexOf(channel) !== -1) return false;
-        }
-        return true;
-      });
-
-      var totalPaymentNonCoverage = (nonCoverageRows || []).length;
-
-      return orderExecDefs_(defs).map(function (def) {
-        if (def.source === 'ga') {
-          return { label: def.label, value: fmtNum(sum(gaRows || [], def.gaKey)), dash: false, ga: true };
-        }
-        if (def.source === 'nonCoveragePayment') {
-          return { label: def.label, value: fmtNum(totalPaymentNonCoverage), dash: false };
-        }
-
-        var tracked = true;
-        if (channel) {
-          tracked = isMetricTracked(channel, def.requires || []);
-        }
-        if (!tracked) return { label: def.label, value: '–', dash: true };
-
-        var value;
-        if (def.key === 'paymentCoverage') {
-          value = sum(rows, 'payment') - totalPaymentNonCoverage;
-        } else {
-          value = sum(rows, def.key);
-        }
-        return { label: def.label, value: fmtNum(value), dash: false, payment: def.key === 'payment' };
-      });
-    }
-
-    function renderCards_(container, metrics, mini) {
-      container.className = 'summary-grid' + (mini ? ' mini' : '');
-      container.innerHTML = metrics.map(function (m) {
-        var extraClass = m.ga ? ' kpi-ga' : (m.payment ? ' kpi-payment' : '');
-        return '<div class="kpi-card' + extraClass + '">' +
-          '<div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
-          '<div class="kpi-value' + (m.dash ? ' is-dash' : '') + '">' + m.value + '</div>' +
-          '</div>';
-      }).join('');
-    }
-
-    function renderExecSummaryCards(container, rows, channel, mini) {
-      renderCards_(container, computeExecMetrics(rows, channel, null, null), mini);
-    }
-
-    // Executive Summary utama (di paling atas dashboard) — selalu per kota
-    // yang sedang aktif (atau semua kota), BUKAN dipecah per channel/platform.
-    function renderMainExecSummary(container, rows, gaRows, nonCoverageRows) {
-      renderCards_(container, computeExecMetrics(rows, null, gaRows, nonCoverageRows), false);
-    }
-
-    function renderTiktokShopSummary(container, rows) {
-      container.className = 'summary-grid mini';
-      container.innerHTML = '<div class="kpi-card">' +
-        '<div class="kpi-label">Total Payment</div>' +
-        '<div class="kpi-value">' + fmtNum(sum(rows, 'payment')) + '</div>' +
-        '</div>';
-    }
-
-    // ==================== RENDER: SEMUA KOTA — RINGKASAN PER KOTA ====================
-
-    function computeCityBreakdown(rows, gaRows) {
-      var byCity = {};
-      function ensureCity(kota) {
-        var k = cityKey(kota);
-        if (!byCity[k]) {
-          byCity[k] = {
-            kota: kota,
-            impressions: 0, waInbound: 0,
-            registrationComplete: 0, payment: 0, covered: 0, activation: 0,
-            allUsers: 0, eventCount: 0
-          };
-        }
-        return byCity[k];
-      }
-
-      rows.forEach(function (r) {
-        if (!r.kota) return;
-        var c = ensureCity(r.kota);
-        c.impressions += r.impressions || 0;
-        c.waInbound += r.waInbound || 0;
-        c.registrationComplete += r.registrationComplete || 0;
-        c.payment += r.payment || 0;
-        c.covered += r.covered || 0;
-        c.activation += r.activation || 0;
-      });
-
-      (gaRows || []).forEach(function (r) {
-        if (!r.kota) return;
-        var c = ensureCity(r.kota);
-        c.allUsers += r.allUsers || 0;
-        c.eventCount += r.eventCount || 0;
-      });
-
-      var list = CITY_LIST.map(function (kota) {
-        var c = byCity[cityKey(kota)];
-        if (c) c.kota = kota;
-        return c;
-      }).filter(Boolean);
-      list.forEach(function (c) { c.notCovered = Math.max(0, c.registrationComplete - c.covered); });
-      list.sort(function (a, b) { return b.registrationComplete - a.registrationComplete; });
-
-      var natIdx = -1;
-      for (var i = 0; i < list.length; i++) { if (isNationalCity(list[i].kota)) { natIdx = i; break; } }
-      if (natIdx !== -1) {
-        var nat = list.splice(natIdx, 1)[0];
-        list.push(nat);
-      }
-      return list;
-    }
-
-    function renderCityBreakdownTable(container, rows, gaRows) {
-      var data = computeCityBreakdown(rows, gaRows);
-      if (data.length === 0) {
-        container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
-        return;
-      }
-
-      var totals = data.reduce(function (acc, c) {
-        acc.impressions += c.impressions;
-        acc.allUsers += c.allUsers;
-        acc.eventCount += c.eventCount;
-        acc.waInbound += c.waInbound;
-        acc.registrationComplete += c.registrationComplete;
-        acc.covered += c.covered;
-        acc.notCovered += c.notCovered;
-        acc.payment += c.payment;
-        acc.activation += c.activation;
-        return acc;
-      }, { impressions: 0, allUsers: 0, eventCount: 0, waInbound: 0, registrationComplete: 0, covered: 0, notCovered: 0, payment: 0, activation: 0 });
-
-      var rowsHtml = data.map(function (c, i) {
-        return '<tr>' +
-          '<td class="rank-cell">' + rankBadge(i, data.length) + '</td>' +
-          '<td>' + escapeHtml(displayCityLabel(c.kota)) + '</td>' +
-          '<td class="num">' + fmtNum(c.impressions) + '</td>' +
-          '<td class="num">' + fmtNum(c.eventCount) + '</td>' +
-          '<td class="num">' + fmtNum(c.allUsers) + '</td>' +
-          '<td class="num">' + fmtNum(c.waInbound) + '</td>' +
-          '<td class="num bar-num-cell"><span class="cell-value">' + fmtNum(c.registrationComplete) + '</span></td>' +
-          '<td class="num">' + fmtNum(c.notCovered) + '</td>' +
-          '<td class="num">' + fmtNum(c.covered) + '</td>' +
-          '<td class="num">' + fmtNum(c.payment) + '</td>' +
-          '<td class="num">' + fmtNum(c.activation) + '</td>' +
-          '</tr>';
-      }).join('');
-
-      var totalRow = '<tr class="total-row">' +
-        '<td></td>' +
-        '<td>Total</td>' +
-        '<td class="num">' + fmtNum(totals.impressions) + '</td>' +
-        '<td class="num">' + fmtNum(totals.eventCount) + '</td>' +
-        '<td class="num">' + fmtNum(totals.allUsers) + '</td>' +
-        '<td class="num">' + fmtNum(totals.waInbound) + '</td>' +
-        '<td class="num">' + fmtNum(totals.registrationComplete) + '</td>' +
-        '<td class="num">' + fmtNum(totals.notCovered) + '</td>' +
-        '<td class="num">' + fmtNum(totals.covered) + '</td>' +
-        '<td class="num">' + fmtNum(totals.payment) + '</td>' +
-        '<td class="num">' + fmtNum(totals.activation) + '</td>' +
-        '</tr>';
-
-      container.innerHTML = '<div class="table-wrap"><table>' +
-        '<thead><tr>' +
-        '<th></th><th>Kota</th><th class="num">Impression</th>' +
-        '<th class="num">' + escapeHtml(GA_LABEL_EVENTS) + '</th><th class="num">' + escapeHtml(GA_LABEL_USERS) + '</th>' +
-        '<th class="num">WA Inbound</th><th class="num">Registrasi</th><th class="num">Tidak Tercover</th>' +
-        '<th class="num">Tercover</th><th class="num">Payment</th><th class="num">Aktif</th>' +
-        '</tr></thead>' +
-        '<tbody>' + rowsHtml + totalRow + '</tbody>' +
-        '</table></div>';
-    }
-
-    // ---------- spotlight: kota & channel terbaik ----------
-
-    function renderSpotlights(container, rows) {
-      var cityData = computeCityBreakdown(rows);
-      var topCity = null;
-      for (var ci = 0; ci < cityData.length; ci++) {
-        if (!isNationalCity(cityData[ci].kota) && cityData[ci].registrationComplete > 0) {
-          topCity = cityData[ci];
-          break;
-        }
-      }
-
-      var channelData = computeChannelRanking(rows);
-      var topChannel = null;
-      for (var i = 0; i < channelData.length; i++) {
-        if (channelData[i].registrationComplete !== null && channelData[i].registrationComplete > 0) {
-          topChannel = channelData[i];
-          break;
-        }
-      }
-
-      var cityIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 1114 0c0 5.314-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
-      var channelIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"></path><path d="M15 7h5v5"></path></svg>';
-
-      var cityBody = topCity
-        ? '<div class="spotlight-value">' + escapeHtml(displayCityLabel(topCity.kota)) + '</div>' +
-          '<div class="spotlight-sub">' + fmtNum(topCity.registrationComplete) + ' registrasi</div>'
-        : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
-
-      var channelBody = topChannel
-        ? '<div class="spotlight-value">' + escapeHtml(topChannel.channel) + '</div>' +
-          '<div class="spotlight-sub">' + fmtNum(topChannel.registrationComplete) + ' registrasi</div>'
-        : '<div class="spotlight-value spotlight-empty">Belum ada data</div>';
-
-      container.innerHTML =
-        '<div class="spotlight-card spotlight-city"><div class="spotlight-icon">' + cityIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Kota Terbaik</div>' + cityBody + '</div></div>' +
-        '<div class="spotlight-card spotlight-channel"><div class="spotlight-icon">' + channelIcon + '</div><div class="spotlight-text"><div class="spotlight-label">Channel Terbaik</div>' + channelBody + '</div></div>';
-    }
-
-    // ==================== RENDER: SEMUA KOTA — TRAFFIC WEBSITE (GA) ====================
-    // Section "Traffic Website (Google Analytics)" DINONAKTIFKAN dari tampilan
-    // "Semua Kota" atas permintaan user. Fungsi & style-nya dibiarkan supaya
-    // gampang diaktifkan lagi kalau perlu.
-
-    function renderTrafficChart(container, rows, gaRows) {
-      var cityData = computeCityBreakdown(rows, gaRows).filter(function (c) {
-        return c.allUsers > 0 || c.eventCount > 0;
-      });
-
-      if (cityData.length === 0) {
-        container.innerHTML = '<div class="empty-state">Belum ada data traffic website untuk rentang filter yang dipilih.</div>';
-        return;
-      }
-
-      cityData.sort(function (a, b) { return b.allUsers - a.allUsers; });
-
-      var maxAllUsers = Math.max.apply(null, cityData.map(function (c) { return c.allUsers; }).concat([1]));
-      var maxEvent = Math.max.apply(null, cityData.map(function (c) { return c.eventCount; }).concat([1]));
-
-      container.innerHTML = '<div class="traffic-chart">' + cityData.map(function (c) {
-        var wUsers = Math.max(2, Math.round((c.allUsers / maxAllUsers) * 100));
-        var wEvent = Math.max(2, Math.round((c.eventCount / maxEvent) * 100));
-        return '<div class="traffic-row">' +
-          '<div class="traffic-city">' + escapeHtml(displayCityLabel(c.kota)) + '</div>' +
-          '<div class="traffic-bars">' +
-            '<div class="traffic-bar-line">' +
-              '<span class="traffic-bar-label">' + escapeHtml(GA_LABEL_USERS) + '</span>' +
-              '<div class="traffic-bar-track"><div class="traffic-bar-fill users" style="width:' + wUsers + '%"></div></div>' +
-              '<span class="traffic-bar-value">' + fmtNum(c.allUsers) + '</span>' +
-            '</div>' +
-            '<div class="traffic-bar-line">' +
-              '<span class="traffic-bar-label">' + escapeHtml(GA_LABEL_EVENTS) + '</span>' +
-              '<div class="traffic-bar-track"><div class="traffic-bar-fill events" style="width:' + wEvent + '%"></div></div>' +
-              '<span class="traffic-bar-value">' + fmtNum(c.eventCount) + '</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('') + '</div>';
-    }
-
-    // ==================== RENDER: SEMUA KOTA — GRAFIK PERFORMA HARIAN ====================
-    // Line chart day-per-day, lingkup selalu mengikuti filter tanggal & kota
-    // yang aktif (sama seperti Executive Summary di atasnya). Metrik yang
-    // ditampilkan bisa dipilih lewat chip toggle; default-nya semua metrik aktif.
-
-    var DAILY_CHART_METRICS = [
-      { key: 'impressions', label: 'Impression', color: '#D2122E' },
-      { key: 'registrationComplete', label: 'Registrasi', color: '#1E8E5A' },
-      { key: 'payment', label: 'Payment', color: '#B98B3E' },
-      { key: 'allUsers', label: 'Web Visit', color: '#2E6FDB' },
-      { key: 'eventCount', label: 'Event Count', color: '#2AA79A' },
-      { key: 'waInbound', label: 'WA Inbound', color: '#8E0E22' }
-    ];
-    var dailyChartVisible = {};
-    DAILY_CHART_METRICS.forEach(function (m) { dailyChartVisible[m.key] = true; });
-    var dailyChartSeriesCache = [];
-
-    function computeDailySeries(rows, gaRows) {
-      var byDate = {};
-      function ensureDate(date) {
-        if (!byDate[date]) {
-          byDate[date] = { date: date, impressions: 0, registrationComplete: 0, payment: 0, waInbound: 0, allUsers: 0, eventCount: 0 };
-        }
-        return byDate[date];
-      }
-      (rows || []).forEach(function (r) {
-        if (!r.tanggal) return;
-        var d = ensureDate(r.tanggal);
-        d.impressions += r.impressions || 0;
-        d.registrationComplete += r.registrationComplete || 0;
-        d.payment += r.payment || 0;
-        d.waInbound += r.waInbound || 0;
-      });
-      (gaRows || []).forEach(function (r) {
-        if (!r.tanggal) return;
-        var d = ensureDate(r.tanggal);
-        d.allUsers += r.allUsers || 0;
-        d.eventCount += r.eventCount || 0;
-      });
-      return Object.keys(byDate).sort().map(function (k) { return byDate[k]; });
-    }
-
-    function fmtAxisNum(n) {
-      n = Math.round(n);
-      var abs = Math.abs(n);
-      if (abs >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'jt';
-      if (abs >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'rb';
-      return fmtNum(n);
-    }
-
-    function formatTanggalShort(iso) {
-      if (!iso) return '';
-      var parts = String(iso).split('-');
-      if (parts.length !== 3) return String(iso);
-      return parts[2] + '/' + parts[1];
-    }
-
-    function renderDailyChart(container, rows, gaRows) {
-      if (!container) return;
-      dailyChartSeriesCache = computeDailySeries(rows, gaRows);
-      container.innerHTML = '<div class="daily-chart-toggles" id="dailyChartToggles"></div>' +
-        '<div class="daily-chart-wrap" id="dailyChartWrapInner"></div>';
+function renderDailyChartToggles() {
+  var el = document.getElementById('dailyChartToggles');
+  if (!el) return;
+  el.innerHTML = DAILY_CHART_METRICS.map(function (m) {
+    var active = dailyChartVisible[m.key];
+    var dotColor = active ? '#fff' : m.color;
+    var style = 'border-color:' + m.color + ';' + (active ? ('background:' + m.color + ';') : '');
+    return '<button type="button" class="chart-toggle-chip' + (active ? ' active' : '') + '" data-metric="' + m.key + '" style="' + style + '">' +
+      '<span class="chip-dot" style="background:' + dotColor + '"></span>' + escapeHtml(m.label) + '</button>';
+  }).join('');
+  el.querySelectorAll('.chart-toggle-chip').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-metric');
+      dailyChartVisible[key] = !dailyChartVisible[key];
       renderDailyChartToggles();
       drawDailyChart();
-    }
+    });
+  });
+}
 
-    function renderDailyChartToggles() {
-      var el = document.getElementById('dailyChartToggles');
-      if (!el) return;
-      el.innerHTML = DAILY_CHART_METRICS.map(function (m) {
-        var active = dailyChartVisible[m.key];
-        var dotColor = active ? '#fff' : m.color;
-        var style = 'border-color:' + m.color + ';' + (active ? ('background:' + m.color + ';') : '');
-        return '<button type="button" class="chart-toggle-chip' + (active ? ' active' : '') + '" data-metric="' + m.key + '" style="' + style + '">' +
-          '<span class="chip-dot" style="background:' + dotColor + '"></span>' + escapeHtml(m.label) +
-          '</button>';
+function isNarrowScreen_() { return window.innerWidth <= 700; }
+var lastNarrow_ = isNarrowScreen_();
+window.addEventListener('resize', function () {
+  var now = isNarrowScreen_();
+  if (now !== lastNarrow_) {
+    lastNarrow_ = now;
+    if (document.getElementById('dailyChartWrapInner')) drawDailyChart();
+  }
+});
+
+function drawDailyChart() {
+  var wrap = document.getElementById('dailyChartWrapInner');
+  if (!wrap) return;
+  var series = dailyChartSeriesCache;
+  var visibleMetrics = DAILY_CHART_METRICS.filter(function (m) { return dailyChartVisible[m.key]; });
+
+  if (series.length === 0) { wrap.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>'; return; }
+  if (visibleMetrics.length === 0) { wrap.innerHTML = '<div class="empty-state">Pilih minimal satu metrik untuk ditampilkan.</div>'; return; }
+
+  var narrow = isNarrowScreen_();
+  var W = narrow ? 560 : 1000, H = narrow ? 300 : 320;
+  var dotR = narrow ? 3.6 : 2.6, lineW = narrow ? 3 : 2.2;
+  var padLeft = 56, padRight = 16, padTop = 16, padBottom = 34;
+  var innerW = W - padLeft - padRight;
+  var innerH = H - padTop - padBottom;
+
+  var maxVal = 0;
+  series.forEach(function (d) { visibleMetrics.forEach(function (m) { if (d[m.key] > maxVal) maxVal = d[m.key]; }); });
+  if (maxVal <= 0) maxVal = 1;
+  maxVal = maxVal * 1.12;
+
+  var n = series.length;
+  var xStep = n > 1 ? innerW / (n - 1) : 0;
+  function xPos(i) { return padLeft + xStep * i; }
+  function yPos(v) { return padTop + innerH - (v / maxVal) * innerH; }
+
+  var ticks = 4, gridHtml = '';
+  for (var t = 0; t <= ticks; t++) {
+    var val = maxVal * t / ticks, y = yPos(val);
+    gridHtml += '<line x1="' + padLeft + '" y1="' + y + '" x2="' + (W - padRight) + '" y2="' + y + '" class="chart-grid-line"></line>';
+    gridHtml += '<text x="' + (padLeft - 8) + '" y="' + (y + 4) + '" class="chart-axis-label" text-anchor="end">' + fmtAxisNum(val) + '</text>';
+  }
+
+  var labelStep = Math.max(1, Math.ceil(n / (narrow ? 5 : 7)));
+  var xLabelsHtml = '';
+  for (var i = 0; i < n; i += labelStep) {
+    xLabelsHtml += '<text x="' + xPos(i) + '" y="' + (H - padBottom + 18) + '" class="chart-axis-label" text-anchor="middle">' + formatTanggalShort(series[i].date) + '</text>';
+  }
+  if ((n - 1) % labelStep !== 0) {
+    xLabelsHtml += '<text x="' + xPos(n - 1) + '" y="' + (H - padBottom + 18) + '" class="chart-axis-label" text-anchor="middle">' + formatTanggalShort(series[n - 1].date) + '</text>';
+  }
+
+  var linesHtml = visibleMetrics.map(function (m) {
+    var d = series.map(function (row, idx) { return (idx === 0 ? 'M' : 'L') + xPos(idx) + ',' + yPos(row[m.key] || 0); }).join(' ');
+    var dots = series.map(function (row, idx) {
+      return '<circle cx="' + xPos(idx) + '" cy="' + yPos(row[m.key] || 0) + '" r="' + dotR + '" fill="' + m.color + '"></circle>';
+    }).join('');
+    return '<path d="' + d + '" fill="none" stroke="' + m.color + '" stroke-width="' + lineW + '" stroke-linejoin="round" stroke-linecap="round"></path>' + dots;
+  }).join('');
+
+  wrap.innerHTML =
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" class="daily-chart-svg" id="dailyChartSvg">' + gridHtml + xLabelsHtml + linesHtml +
+    '<line id="dailyChartCrosshair" x1="0" y1="' + padTop + '" x2="0" y2="' + (H - padBottom) + '" class="chart-crosshair" style="display:none"></line>' +
+    '<rect x="' + padLeft + '" y="' + padTop + '" width="' + Math.max(innerW, 1) + '" height="' + Math.max(innerH, 1) + '" fill="transparent" id="dailyChartHoverRect"></rect></svg>' +
+    '<div class="daily-chart-tooltip" id="dailyChartTooltip" style="display:none"></div>';
+
+  bindDailyChartHover(series, visibleMetrics, padLeft, xStep, n, W);
+}
+
+function bindDailyChartHover(series, visibleMetrics, padLeft, xStep, n, viewBoxW) {
+  var svg = document.getElementById('dailyChartSvg');
+  var crosshair = document.getElementById('dailyChartCrosshair');
+  var tooltip = document.getElementById('dailyChartTooltip');
+  var wrap = document.getElementById('dailyChartWrapInner');
+  if (!svg || !crosshair || !tooltip || !wrap) return;
+
+  function handleMove(clientX, clientY) {
+    var rect = svg.getBoundingClientRect();
+    if (rect.width === 0) return;
+    var scale = viewBoxW / rect.width;
+    var localX = (clientX - rect.left) * scale;
+    var idx = xStep > 0 ? Math.round((localX - padLeft) / xStep) : 0;
+    idx = Math.max(0, Math.min(n - 1, idx));
+    var d = series[idx];
+    var xPix = padLeft + xStep * idx;
+
+    crosshair.setAttribute('x1', xPix);
+    crosshair.setAttribute('x2', xPix);
+    crosshair.style.display = 'block';
+
+    var rowsHtml = visibleMetrics.map(function (m) {
+      return '<div class="chart-tooltip-row"><span class="chip-dot" style="background:' + m.color + '"></span>' +
+        '<span class="chart-tooltip-label">' + escapeHtml(m.label) + '</span>' +
+        '<span class="chart-tooltip-value">' + fmtNum(d[m.key] || 0) + '</span></div>';
+    }).join('');
+    tooltip.innerHTML = '<div class="chart-tooltip-date">' + escapeHtml(formatTanggal(d.date)) + '</div>' + rowsHtml;
+    tooltip.style.display = 'block';
+
+    var wrapRect = wrap.getBoundingClientRect();
+    var left = clientX - wrapRect.left + 14;
+    var top = clientY - wrapRect.top - 10;
+    if (left + 190 > wrapRect.width) left = clientX - wrapRect.left - 200;
+    tooltip.style.left = Math.max(0, left) + 'px';
+    tooltip.style.top = Math.max(0, top) + 'px';
+  }
+  function handleLeave() { crosshair.style.display = 'none'; tooltip.style.display = 'none'; }
+
+  svg.addEventListener('mousemove', function (evt) { handleMove(evt.clientX, evt.clientY); });
+  svg.addEventListener('mouseleave', handleLeave);
+  svg.addEventListener('touchmove', function (evt) {
+    if (evt.touches && evt.touches[0]) handleMove(evt.touches[0].clientX, evt.touches[0].clientY);
+  }, { passive: true });
+  svg.addEventListener('touchend', handleLeave);
+}
+
+// ==================== RINGKASAN PERFORMA CHANNEL ====================
+function computeChannelRanking(rows) {
+  return CHANNELS.map(function (channel) {
+    var channelRows = rows.filter(function (r) { return r.channel === channel; });
+    var trackedRegis = isMetricTracked(channel, ['Registration Complete']);
+    var trackedCovered = isMetricTracked(channel, ['Covered']);
+    var trackedPotential = isMetricTracked(channel, ['Potential']);
+    var trackedPayment = isMetricTracked(channel, ['Payment']);
+    var trackedActivation = isMetricTracked(channel, ['Activation']);
+
+    var registrationComplete = trackedRegis ? sum(channelRows, 'registrationComplete') : null;
+    var covered = trackedCovered ? sum(channelRows, 'covered') : null;
+    var potential = trackedPotential ? sum(channelRows, 'potential') : null;
+    var payment = trackedPayment ? sum(channelRows, 'payment') : null;
+    var activation = trackedActivation ? sum(channelRows, 'activation') : null;
+    var konversi = (trackedCovered && trackedPayment && covered > 0) ? (payment / covered * 100) : null;
+
+    return { channel: channel, registrationComplete: registrationComplete, covered: covered, potential: potential, payment: payment, activation: activation, konversi: konversi };
+  }).sort(function (a, b) { return (b.registrationComplete || 0) - (a.registrationComplete || 0); });
+}
+
+function statChip_(label, value, isPercent) {
+  var display = value === null ? '<span class="is-dash">–</span>' : (isPercent ? value.toFixed(1) + '%' : fmtNum(value));
+  return '<div class="channel-rank-stat"><span class="stat-label">' + label + '</span><span class="stat-value' + (value === null ? ' is-dash' : '') + '">' + display + '</span></div>';
+}
+
+function renderChannelLeaderboard(container, rows) {
+  var data = computeChannelRanking(rows);
+  if (data.length === 0) { container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>'; return; }
+  container.innerHTML = '<div class="channel-leaderboard">' + data.map(function (d, i) {
+    var color = channelColor(d.channel);
+    return '<div class="channel-rank-row">' +
+      '<div class="channel-rank-badge">' + rankBadge(i, data.length) + '</div>' +
+      '<div class="channel-rank-main"><div class="channel-rank-name"><span class="dot" style="background:' + color + '"></span>' + escapeHtml(d.channel) + '</div></div>' +
+      '<div class="channel-rank-stats">' +
+        statChip_('Registrasi', d.registrationComplete) +
+        statChip_('Tidak Tercover', d.potential) +
+        statChip_('Tercover', d.covered) +
+        statChip_('Payment', d.payment) +
+        statChip_('Aktif', d.activation) +
+        statChip_('Konversi', d.konversi, true) +
+      '</div></div>';
+  }).join('') + '</div>';
+}
+
+// ==================== DETAIL PER CHANNEL ====================
+function channelKey(channel) { return 'ch_' + channel.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function renderChannelCards(rows) {
+  var wrap = document.getElementById('channelCardsWrap');
+  wrap.innerHTML = CHANNELS.map(channelCardTemplate).join('');
+  CHANNELS.forEach(function (channel) {
+    channelPage[channel] = channelPage[channel] || 1;
+    populateChannelCard(channel, rows);
+  });
+}
+
+function channelCardTemplate(channel) {
+  var color = channelColor(channel);
+  var key = channelKey(channel);
+  return '<div class="channel-card">' +
+    '<div class="channel-card-header"><span class="dot" style="background:' + color + '"></span><h3>' + escapeHtml(channel) + '</h3></div>' +
+    '<div class="summary-grid mini" id="' + key + '_summary"></div>' +
+    '<div class="table-wrap"><table><thead><tr id="' + key + '_head"></tr></thead><tbody id="' + key + '_body"></tbody></table></div>' +
+    '<div class="pagination" id="' + key + '_pagination"></div></div>';
+}
+
+function populateChannelCard(channel, rows) {
+  var key = channelKey(channel);
+  var channelRows = rows.filter(function (r) { return r.channel === channel; });
+
+  if (isTiktokShop(channel)) renderTiktokShopSummary(document.getElementById(key + '_summary'), channelRows);
+  else renderExecSummaryCards(document.getElementById(key + '_summary'), channelRows, channel, true);
+
+  var cols = getChannelTableColumns(channel);
+  document.getElementById(key + '_head').innerHTML = cols.map(function (h) {
+    return '<th' + (h === 'Tanggal' ? '' : ' class="num"') + '>' + escapeHtml(getColumnLabel(h)) + '</th>';
+  }).join('');
+
+  channelDataCache[channel] = channelRows.slice().sort(function (a, b) { return (b.tanggal || '').localeCompare(a.tanggal || ''); });
+  renderChannelPage(channel, 1);
+}
+
+function renderChannelPage(channel, page) {
+  var key = channelKey(channel);
+  var rows = channelDataCache[channel] || [];
+  var totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
+  page = Math.min(Math.max(1, page), totalPages);
+  channelPage[channel] = page;
+
+  var start = (page - 1) * ROWS_PER_PAGE;
+  var pageRows = rows.slice(start, start + ROWS_PER_PAGE);
+  var cols = getChannelTableColumns(channel);
+  var totalCols = Math.max(1, cols.length);
+
+  var body = document.getElementById(key + '_body');
+  if (pageRows.length === 0) {
+    body.innerHTML = '<tr><td colspan="' + totalCols + '"><div class="empty-state">Tidak ada data untuk channel ini pada rentang filter yang dipilih.</div></td></tr>';
+  } else {
+    body.innerHTML = pageRows.map(function (r) {
+      var cells = cols.map(function (h) {
+        if (h === 'Tanggal') return '<td>' + escapeHtml(formatTanggal(r.tanggal)) + '</td>';
+        var k = (h === 'Traffic') ? 'reach' : (h === 'Impression' ? 'impressions' : HEADER_TO_KEY[h]);
+        return '<td class="num">' + fmtNum(r[k] || 0) + '</td>';
       }).join('');
-      el.querySelectorAll('.chart-toggle-chip').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var key = btn.getAttribute('data-metric');
-          dailyChartVisible[key] = !dailyChartVisible[key];
-          renderDailyChartToggles();
-          drawDailyChart();
-        });
-      });
-    }
-
-    function drawDailyChart() {
-      var wrap = document.getElementById('dailyChartWrapInner');
-      if (!wrap) return;
-      var series = dailyChartSeriesCache;
-      var visibleMetrics = DAILY_CHART_METRICS.filter(function (m) { return dailyChartVisible[m.key]; });
-
-      if (series.length === 0) {
-        wrap.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
-        return;
-      }
-      if (visibleMetrics.length === 0) {
-        wrap.innerHTML = '<div class="empty-state">Pilih minimal satu metrik untuk ditampilkan.</div>';
-        return;
-      }
-
-      var W = 1000, H = 320;
-      var padLeft = 56, padRight = 16, padTop = 16, padBottom = 34;
-      var innerW = W - padLeft - padRight;
-      var innerH = H - padTop - padBottom;
-
-      var maxVal = 0;
-      series.forEach(function (d) {
-        visibleMetrics.forEach(function (m) { if (d[m.key] > maxVal) maxVal = d[m.key]; });
-      });
-      if (maxVal <= 0) maxVal = 1;
-      maxVal = maxVal * 1.12;
-
-      var n = series.length;
-      var xStep = n > 1 ? innerW / (n - 1) : 0;
-      function xPos(i) { return padLeft + xStep * i; }
-      function yPos(v) { return padTop + innerH - (v / maxVal) * innerH; }
-
-      var ticks = 4;
-      var gridHtml = '';
-      for (var t = 0; t <= ticks; t++) {
-        var val = maxVal * t / ticks;
-        var y = yPos(val);
-        gridHtml += '<line x1="' + padLeft + '" y1="' + y + '" x2="' + (W - padRight) + '" y2="' + y + '" class="chart-grid-line"></line>';
-        gridHtml += '<text x="' + (padLeft - 8) + '" y="' + (y + 4) + '" class="chart-axis-label" text-anchor="end">' + fmtAxisNum(val) + '</text>';
-      }
-
-      var labelStep = Math.max(1, Math.ceil(n / 7));
-      var xLabelsHtml = '';
-      for (var i = 0; i < n; i += labelStep) {
-        xLabelsHtml += '<text x="' + xPos(i) + '" y="' + (H - padBottom + 18) + '" class="chart-axis-label" text-anchor="middle">' + formatTanggalShort(series[i].date) + '</text>';
-      }
-      if ((n - 1) % labelStep !== 0) {
-        xLabelsHtml += '<text x="' + xPos(n - 1) + '" y="' + (H - padBottom + 18) + '" class="chart-axis-label" text-anchor="middle">' + formatTanggalShort(series[n - 1].date) + '</text>';
-      }
-
-      var linesHtml = visibleMetrics.map(function (m) {
-        var d = series.map(function (row, idx) { return (idx === 0 ? 'M' : 'L') + xPos(idx) + ',' + yPos(row[m.key] || 0); }).join(' ');
-        var dots = series.map(function (row, idx) {
-          return '<circle cx="' + xPos(idx) + '" cy="' + yPos(row[m.key] || 0) + '" r="2.6" fill="' + m.color + '"></circle>';
-        }).join('');
-        return '<path d="' + d + '" fill="none" stroke="' + m.color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>' + dots;
-      }).join('');
-
-      wrap.innerHTML =
-        '<svg viewBox="0 0 ' + W + ' ' + H + '" class="daily-chart-svg" id="dailyChartSvg">' +
-          gridHtml + xLabelsHtml + linesHtml +
-          '<line id="dailyChartCrosshair" x1="0" y1="' + padTop + '" x2="0" y2="' + (H - padBottom) + '" class="chart-crosshair" style="display:none"></line>' +
-          '<rect x="' + padLeft + '" y="' + padTop + '" width="' + Math.max(innerW, 1) + '" height="' + Math.max(innerH, 1) + '" fill="transparent" id="dailyChartHoverRect"></rect>' +
-        '</svg>' +
-        '<div class="daily-chart-tooltip" id="dailyChartTooltip" style="display:none"></div>';
-
-      bindDailyChartHover(series, visibleMetrics, padLeft, xStep, n, W);
-    }
-
-    function bindDailyChartHover(series, visibleMetrics, padLeft, xStep, n, viewBoxW) {
-      var svg = document.getElementById('dailyChartSvg');
-      var crosshair = document.getElementById('dailyChartCrosshair');
-      var tooltip = document.getElementById('dailyChartTooltip');
-      var wrap = document.getElementById('dailyChartWrapInner');
-      if (!svg || !crosshair || !tooltip || !wrap) return;
-
-      function handleMove(clientX, clientY) {
-        var rect = svg.getBoundingClientRect();
-        if (rect.width === 0) return;
-        var scale = viewBoxW / rect.width;
-        var localX = (clientX - rect.left) * scale;
-        var idx = xStep > 0 ? Math.round((localX - padLeft) / xStep) : 0;
-        idx = Math.max(0, Math.min(n - 1, idx));
-        var d = series[idx];
-        var xPix = padLeft + xStep * idx;
-
-        crosshair.setAttribute('x1', xPix);
-        crosshair.setAttribute('x2', xPix);
-        crosshair.style.display = 'block';
-
-        var rowsHtml = visibleMetrics.map(function (m) {
-          return '<div class="chart-tooltip-row"><span class="chip-dot" style="background:' + m.color + '"></span>' +
-            '<span class="chart-tooltip-label">' + escapeHtml(m.label) + '</span>' +
-            '<span class="chart-tooltip-value">' + fmtNum(d[m.key] || 0) + '</span></div>';
-        }).join('');
-        tooltip.innerHTML = '<div class="chart-tooltip-date">' + escapeHtml(formatTanggal(d.date)) + '</div>' + rowsHtml;
-        tooltip.style.display = 'block';
-
-        var wrapRect = wrap.getBoundingClientRect();
-        var left = clientX - wrapRect.left + 14;
-        var top = clientY - wrapRect.top - 10;
-        if (left + 190 > wrapRect.width) left = clientX - wrapRect.left - 200;
-        tooltip.style.left = Math.max(0, left) + 'px';
-        tooltip.style.top = Math.max(0, top) + 'px';
-      }
-
-      function handleLeave() {
-        crosshair.style.display = 'none';
-        tooltip.style.display = 'none';
-      }
-
-      svg.addEventListener('mousemove', function (evt) { handleMove(evt.clientX, evt.clientY); });
-      svg.addEventListener('mouseleave', handleLeave);
-      svg.addEventListener('touchmove', function (evt) {
-        if (evt.touches && evt.touches[0]) handleMove(evt.touches[0].clientX, evt.touches[0].clientY);
-      }, { passive: true });
-      svg.addEventListener('touchend', handleLeave);
-    }
-
-    // ==================== RENDER: SEMUA KOTA — RINGKASAN PERFORMA CHANNEL ====================
-
-    function computeChannelRanking(rows) {
-      return CHANNELS.map(function (channel) {
-        var channelRows = rows.filter(function (r) { return r.channel === channel; });
-        var trackedRegis = isMetricTracked(channel, ['Registration Complete']);
-        var trackedCovered = isMetricTracked(channel, ['Covered']);
-        var trackedPotential = isMetricTracked(channel, ['Potential']);
-        var trackedPayment = isMetricTracked(channel, ['Payment']);
-        var trackedActivation = isMetricTracked(channel, ['Activation']);
-
-        var registrationComplete = trackedRegis ? sum(channelRows, 'registrationComplete') : null;
-        var covered = trackedCovered ? sum(channelRows, 'covered') : null;
-        var potential = trackedPotential ? sum(channelRows, 'potential') : null;
-        var payment = trackedPayment ? sum(channelRows, 'payment') : null;
-        var activation = trackedActivation ? sum(channelRows, 'activation') : null;
-        var konversi = (trackedCovered && trackedPayment && covered > 0)
-          ? (payment / covered * 100) : null;
-
-        return {
-          channel: channel,
-          registrationComplete: registrationComplete,
-          covered: covered,
-          potential: potential,
-          payment: payment,
-          activation: activation,
-          konversi: konversi
-        };
-      }).sort(function (a, b) {
-        return (b.registrationComplete || 0) - (a.registrationComplete || 0);
-      });
-    }
-
-    function statChip_(label, value, isPercent) {
-      var display = value === null
-        ? '<span class="is-dash">–</span>'
-        : (isPercent ? value.toFixed(1) + '%' : fmtNum(value));
-      return '<div class="channel-rank-stat"><span class="stat-label">' + label + '</span><span class="stat-value' + (value === null ? ' is-dash' : '') + '">' + display + '</span></div>';
-    }
-
-    function renderChannelLeaderboard(container, rows) {
-      var data = computeChannelRanking(rows);
-      if (data.length === 0) {
-        container.innerHTML = '<div class="empty-state">Belum ada data untuk rentang filter yang dipilih.</div>';
-        return;
-      }
-
-      container.innerHTML = '<div class="channel-leaderboard">' + data.map(function (d, i) {
-        var color = channelColor(d.channel);
-        return '<div class="channel-rank-row">' +
-          '<div class="channel-rank-badge">' + rankBadge(i, data.length) + '</div>' +
-          '<div class="channel-rank-main">' +
-            '<div class="channel-rank-name"><span class="dot" style="background:' + color + '"></span>' + escapeHtml(d.channel) + '</div>' +
-          '</div>' +
-          '<div class="channel-rank-stats">' +
-            statChip_('Registrasi', d.registrationComplete) +
-            statChip_('Tidak Tercover', d.potential) +
-            statChip_('Tercover', d.covered) +
-            statChip_('Payment', d.payment) +
-            statChip_('Aktif', d.activation) +
-            statChip_('Konversi', d.konversi, true) +
-          '</div>' +
-        '</div>';
-      }).join('') + '</div>';
-    }
-
-    // ==================== RENDER: DETAIL PER CHANNEL (KOTA TERPILIH) ====================
-
-    function channelKey(channel) { return 'ch_' + channel.replace(/[^a-zA-Z0-9]/g, '_'); }
-
-    function renderChannelCards(rows) {
-      var wrap = document.getElementById('channelCardsWrap');
-      wrap.innerHTML = CHANNELS.map(channelCardTemplate).join('');
-
-      CHANNELS.forEach(function (channel) {
-        channelPage[channel] = channelPage[channel] || 1;
-        populateChannelCard(channel, rows);
-      });
-    }
-
-    function channelCardTemplate(channel) {
-      var color = channelColor(channel);
-      var key = channelKey(channel);
-      return '<div class="channel-card">' +
-        '<div class="channel-card-header"><span class="dot" style="background:' + color + '"></span><h3>' + escapeHtml(channel) + '</h3></div>' +
-        '<div class="summary-grid mini" id="' + key + '_summary"></div>' +
-        '<div class="table-wrap"><table><thead><tr id="' + key + '_head"></tr></thead><tbody id="' + key + '_body"></tbody></table></div>' +
-        '<div class="pagination" id="' + key + '_pagination"></div>' +
-        '</div>';
-    }
-
-    function populateChannelCard(channel, rows) {
-      var key = channelKey(channel);
-      var channelRows = rows.filter(function (r) { return r.channel === channel; });
-
-      if (isTiktokShop(channel)) {
-        renderTiktokShopSummary(document.getElementById(key + '_summary'), channelRows);
-      } else {
-        renderExecSummaryCards(document.getElementById(key + '_summary'), channelRows, channel, true);
-      }
-
-      var cols = getChannelTableColumns(channel);
-      var headerCells = cols.map(function (h) {
-        var isTextCol = (h === 'Aset' || h === 'Tanggal');
-        return '<th' + (isTextCol ? '' : ' class="num"') + '>' + escapeHtml(getColumnLabel(h)) + '</th>';
-      }).join('');
-      document.getElementById(key + '_head').innerHTML = headerCells;
-
-      channelDataCache[channel] = channelRows.slice().sort(function (a, b) {
-        return (b.tanggal || '').localeCompare(a.tanggal || '');
-      });
-
-      renderChannelPage(channel, 1);
-    }
-
-    function renderChannelPage(channel, page) {
-      var key = channelKey(channel);
-      var rows = channelDataCache[channel] || [];
-      var totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
-      page = Math.min(Math.max(1, page), totalPages);
-      channelPage[channel] = page;
-
-      var start = (page - 1) * ROWS_PER_PAGE;
-      var pageRows = rows.slice(start, start + ROWS_PER_PAGE);
-      var cols = getChannelTableColumns(channel);
-      var totalCols = Math.max(1, cols.length);
-
-      var body = document.getElementById(key + '_body');
-      if (pageRows.length === 0) {
-        body.innerHTML = '<tr><td colspan="' + totalCols + '"><div class="empty-state">Tidak ada data untuk channel ini pada rentang filter yang dipilih.</div></td></tr>';
-      } else {
-        body.innerHTML = pageRows.map(function (r) {
-          var cells = cols.map(function (h) {
-            if (h === 'Aset') return '<td>' + renderAssetCell(r) + '</td>';
-            if (h === 'Tanggal') return '<td>' + escapeHtml(formatTanggal(r.tanggal)) + '</td>';
-            var k = (h === 'Traffic') ? 'reach' : (h === 'Impression' ? 'impressions' : HEADER_TO_KEY[h]);
-            return '<td class="num">' + fmtNum(r[k] || 0) + '</td>';
-          }).join('');
-          return '<tr>' + cells + '</tr>';
-        }).join('');
-      }
-
-      var pag = document.getElementById(key + '_pagination');
-      pag.innerHTML =
-        '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="prev"' + (page <= 1 ? ' disabled' : '') + '>Sebelumnya</button>' +
-        '<span class="page-info">Halaman ' + page + ' dari ' + totalPages + ' (' + rows.length + ' baris)</span>' +
-        '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="next"' + (page >= totalPages ? ' disabled' : '') + '>Berikutnya</button>';
-
-      pag.querySelectorAll('.page-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var ch = btn.getAttribute('data-channel');
-          var dir = btn.getAttribute('data-dir');
-          var cur = channelPage[ch] || 1;
-          renderChannelPage(ch, dir === 'next' ? cur + 1 : cur - 1);
-        });
-      });
-    }
-
-    // ==================== RENDER: SUMMARY (GROWTH PERIODE A vs B) ====================
-    // Selalu lingkup Semua Kota (tidak dipengaruhi pilihan kota di sidebar).
-    // Periode A & B masing-masing 1 grup filter range (dari–sampai). "Key
-    // Changes" hanya menunjukkan naik/turunnya Registrasi & Payment (murni
-    // hitungan, tanpa AI).
-
-    var GROWTH_KPI_DEFS = [
-      { key: 'impressions', label: 'Impressions', kind: 'row' },
-      { key: 'eventCount', label: 'Event Count Website', kind: 'ga' },
-      { key: 'allUsers', label: 'Website Users', kind: 'ga' },
-      { key: 'waInbound', label: 'WA Inbound', kind: 'row' },
-      { key: 'registrationComplete', label: 'Registrations', kind: 'row' },
-      { key: 'potential', label: 'Tidak Tercover', kind: 'row' },
-      { key: 'covered', label: 'Covered', kind: 'row' },
-      { key: 'payment', label: 'Payment', kind: 'row' },
-      { key: 'activation', label: 'Activation', kind: 'row' }
-    ];
-
-    var GROWTH_CHANNEL_COLS = [
-      { key: 'waInbound', label: 'WA Inbound', requires: ['WA Inbound'] },
-      { key: 'registrationComplete', label: 'Registrations', requires: ['Registration Complete'] },
-      { key: 'covered', label: 'Covered', requires: ['Covered'] },
-      { key: 'potential', label: 'Tidak Tercover', requires: ['Potential'] },
-      { key: 'payment', label: 'Payment', requires: ['Payment'] }
-    ];
-
-    var GROWTH_CITY_COLS = [
-      { key: 'impressions', label: 'Impressions' },
-      { key: 'allUsers', label: 'Website Users' },
-      { key: 'waInbound', label: 'WA Inbound' },
-      { key: 'registrationComplete', label: 'Registrations' },
-      { key: 'covered', label: 'Covered' },
-      { key: 'potential', label: 'Tidak Tercover' },
-      { key: 'payment', label: 'Payment' }
-    ];
-
-    // Set default awal: Periode B = tanggal terakhir yang ada datanya,
-    // Periode A = 1 hari sebelumnya. Dipanggil sekali saat data load, dan
-    // lagi kalau user klik "Reset Periode".
-    function initSummaryDatesDefault(force) {
-      if (summaryDatesInitialized && !force) return;
-      summaryDatesInitialized = true;
-
-      var maxDate = '';
-      ALL_ROWS.forEach(function (r) {
-        if (r.tanggal && r.tanggal > maxDate) maxDate = r.tanggal;
-      });
-      if (!maxDate) maxDate = toISO(new Date());
-      var prevDate = addDaysISO(maxDate, -1);
-
-      document.getElementById('periodBFrom').value = maxDate;
-      document.getElementById('periodBTo').value = maxDate;
-      document.getElementById('periodAFrom').value = prevDate;
-      document.getElementById('periodATo').value = prevDate;
-    }
-
-    function filterRowsByRange(rows, from, to) {
-      return rows.filter(function (r) {
-        if (from && r.tanggal && r.tanggal < from) return false;
-        if (to && r.tanggal && r.tanggal > to) return false;
-        return true;
-      });
-    }
-
-    function formatRangeLabel(range) {
-      if (!range.from && !range.to) return 'Semua data';
-      if (range.from === range.to || !range.to) return formatTanggal(range.from);
-      if (!range.from) return 'sampai ' + formatTanggal(range.to);
-      return formatTanggal(range.from) + '–' + formatTanggal(range.to);
-    }
-
-    // a = nilai periode A (baseline), b = nilai periode B (pembanding).
-    function pctChange(a, b) {
-      if (!a) {
-        if (!b) return { pct: 0, label: '0,0%', dir: 'flat' };
-        return { pct: null, label: 'n/a · basis nol', dir: 'up' };
-      }
-      var pct = (b - a) / a * 100;
-      var dir = pct > 0.05 ? 'up' : (pct < -0.05 ? 'down' : 'flat');
-      var arrow = dir === 'up' ? '↑ ' : (dir === 'down' ? '↓ ' : '');
-      return { pct: pct, label: arrow + Math.abs(pct).toFixed(1).replace('.', ',') + '%', dir: dir };
-    }
-
-    function deltaClass(dir) { return 'delta-' + dir; }
-
-    function getSummaryPeriods() {
-      return {
-        a: { from: document.getElementById('periodAFrom').value, to: document.getElementById('periodATo').value },
-        b: { from: document.getElementById('periodBFrom').value, to: document.getElementById('periodBTo').value }
-      };
-    }
-
-    function renderGrowthSummary() {
-      var periods = getSummaryPeriods();
-      var rowsA = filterRowsByRange(ALL_ROWS, periods.a.from, periods.a.to);
-      var rowsB = filterRowsByRange(ALL_ROWS, periods.b.from, periods.b.to);
-      var gaA = filterRowsByRange(GA_ROWS, periods.a.from, periods.a.to);
-      var gaB = filterRowsByRange(GA_ROWS, periods.b.from, periods.b.to);
-
-      document.getElementById('growthScopeLabel').textContent =
-        'Data periode ' + formatRangeLabel(periods.b) + ' · dibandingkan dengan ' + formatRangeLabel(periods.a) + ' · Semua Kota';
-
-      var kpis = GROWTH_KPI_DEFS.map(function (def) {
-        var a = def.kind === 'ga' ? sum(gaA, def.key) : sum(rowsA, def.key);
-        var b = def.kind === 'ga' ? sum(gaB, def.key) : sum(rowsB, def.key);
-        return { key: def.key, label: def.label, a: a, b: b, delta: pctChange(a, b), ga: def.kind === 'ga' };
-      });
-
-      renderGrowthKpiCards(kpis);
-      renderGrowthChannelTable(rowsA, rowsB);
-      renderGrowthCityTable(rowsA, rowsB, gaA, gaB);
-    }
-
-    function renderGrowthKpiCards(kpis) {
-      var wrap = document.getElementById('growthKpiWrap');
-      wrap.className = 'summary-grid';
-
-      var cardsHtml = kpis.map(function (m) {
-        return '<div class="kpi-card' + (m.ga ? ' kpi-ga' : '') + '">' +
-          '<div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
-          '<div class="kpi-value">' + fmtNum(m.b) + '</div>' +
-          '<div class="kpi-delta ' + deltaClass(m.delta.dir) + '">' + m.delta.label + '</div>' +
-          '</div>';
-      }).join('');
-
-      var regis = kpis.filter(function (k) { return k.key === 'registrationComplete'; })[0];
-      var payment = kpis.filter(function (k) { return k.key === 'payment'; })[0];
-
-      function changeLine(label, item) {
-        if (item.delta.dir === 'flat') return label + ' tidak berubah (' + fmtNum(item.a) + ' → ' + fmtNum(item.b) + ')';
-        var verb = item.delta.dir === 'up' ? 'naik' : 'turun';
-        var pctText = item.delta.pct === null ? '' : ' ' + Math.abs(item.delta.pct).toFixed(1).replace('.', ',') + '%';
-        return label + ' ' + verb + pctText + ' (' + fmtNum(item.a) + ' → ' + fmtNum(item.b) + ')';
-      }
-
-      var keyChangesHtml = '<div class="kpi-card kpi-changes">' +
-        '<div class="kpi-label">Key Changes</div>' +
-        '<div class="kpi-changes-line ' + deltaClass(regis.delta.dir) + '">' + escapeHtml(changeLine('Registrasi', regis)) + '</div>' +
-        '<div class="kpi-changes-line ' + deltaClass(payment.delta.dir) + '">' + escapeHtml(changeLine('Payment', payment)) + '</div>' +
-        '</div>';
-
-      wrap.innerHTML = cardsHtml + keyChangesHtml;
-    }
-
-    function cellStack(value, delta) {
-      return '<td class="cell-stack"><span class="cell-value">' + fmtNum(value) + '</span>' +
-        '<span class="cell-delta ' + deltaClass(delta.dir) + '">' + delta.label + '</span></td>';
-    }
-
-    function renderGrowthChannelTable(rowsA, rowsB) {
-      var data = CHANNELS.map(function (channel) {
-        var chA = rowsA.filter(function (r) { return r.channel === channel; });
-        var chB = rowsB.filter(function (r) { return r.channel === channel; });
-        var cols = GROWTH_CHANNEL_COLS.map(function (def) {
-          var tracked = isMetricTracked(channel, def.requires);
-          if (!tracked) return { tracked: false };
-          var a = sum(chA, def.key);
-          var b = sum(chB, def.key);
-          return { tracked: true, a: a, b: b, delta: pctChange(a, b) };
-        });
-        return { channel: channel, cols: cols };
-      });
-
-      var headHtml = '<tr><th>Channel</th>' + GROWTH_CHANNEL_COLS.map(function (def) {
-        return '<th class="num">' + escapeHtml(def.label) + '</th>';
-      }).join('') + '</tr>';
-
-      var bodyHtml = data.map(function (d) {
-        var cells = d.cols.map(function (c) {
-          if (!c.tracked) return '<td class="num"><span class="is-dash">–</span></td>';
-          return cellStack(c.b, c.delta);
-        }).join('');
-        return '<tr><td>' + escapeHtml(d.channel) + '</td>' + cells + '</tr>';
-      }).join('');
-
-      document.getElementById('growthChannelWrap').innerHTML =
-        '<div class="table-wrap"><table><thead>' + headHtml + '</thead><tbody>' + bodyHtml + '</tbody></table></div>';
-    }
-
-    function renderGrowthCityTable(rowsA, rowsB, gaA, gaB) {
-      var cityA = computeCityBreakdown(rowsA, gaA);
-      var cityB = computeCityBreakdown(rowsB, gaB);
-      var byKeyA = {};
-      cityA.forEach(function (c) { byKeyA[cityKey(c.kota)] = c; });
-
-      var headHtml = '<tr><th>Kota</th>' + GROWTH_CITY_COLS.map(function (def) {
-        return '<th class="num">' + escapeHtml(def.label) + '</th>';
-      }).join('') + '</tr>';
-
-      var bodyHtml = cityB.map(function (cB) {
-        var cA = byKeyA[cityKey(cB.kota)] || { impressions: 0, allUsers: 0, waInbound: 0, registrationComplete: 0, covered: 0, potential: 0, payment: 0, notCovered: 0 };
-        var cells = GROWTH_CITY_COLS.map(function (def) {
-          var aVal = def.key === 'potential' ? cA.notCovered : cA[def.key];
-          var bVal = def.key === 'potential' ? cB.notCovered : cB[def.key];
-          return cellStack(bVal || 0, pctChange(aVal || 0, bVal || 0));
-        }).join('');
-        return '<tr><td>' + escapeHtml(displayCityLabel(cB.kota)) + '</td>' + cells + '</tr>';
-      }).join('');
-
-      document.getElementById('growthCityWrap').innerHTML =
-        '<div class="table-wrap"><table><thead>' + headHtml + '</thead><tbody>' + bodyHtml + '</tbody></table></div>';
-    }
-
-    // ---------- Download PDF Summary (beneran download file, bukan dialog print) ----------
-    // Pakai html2pdf.js (html2canvas + jsPDF) buat "memotret" tampilan
-    // #summaryView apa adanya — styling dashboard tetap kepakai karena masih
-    // di dokumen yang sama — lalu langsung trigger download file .pdf ke
-    // komputer user.
-    function handleSummaryPdfClick() {
-      if (typeof html2pdf === 'undefined') {
-        alert('Library PDF belum siap dimuat, coba beberapa detik lagi.');
-        return;
-      }
-
-      var btn = document.getElementById('summaryDownloadBtn');
-      var originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.textContent = 'Menyiapkan PDF…';
-
-      var periods = getSummaryPeriods();
-      var scopeText = 'Data periode ' + formatRangeLabel(periods.b) + ' · dibandingkan dengan ' + formatRangeLabel(periods.a) + ' · Semua Kota';
-
-      var clone = document.getElementById('summaryView').cloneNode(true);
-      clone.style.display = 'block';
-      clone.removeAttribute('id');
-
-      var header = document.createElement('div');
-      header.style.marginBottom = '18px';
-      header.innerHTML =
-        '<div style="font-size:19px;margin:0 0 4px;color:#8E0E22;font-weight:800;">Growth Summary — Internet Rakyat</div>' +
-        '<div style="font-size:12.5px;color:#94959D;">' + escapeHtml(scopeText) + '</div>';
-
-      var overlay = document.createElement('div');
-      overlay.id = 'pdfExportOverlay';
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.right = '0';
-      overlay.style.bottom = '0';
-      overlay.style.background = '#ffffff';
-      overlay.style.zIndex = '999999';
-      overlay.style.overflow = 'auto';
-
-      var wrapper = document.createElement('div');
-      wrapper.style.background = '#ffffff';
-      wrapper.style.padding = '26px';
-      wrapper.style.width = '1150px';
-      wrapper.style.margin = '0 auto';
-      wrapper.appendChild(header);
-      wrapper.appendChild(clone);
-
-      overlay.appendChild(wrapper);
-      document.body.appendChild(overlay);
-
-      var fileName = 'Growth_Summary_' + toISO(new Date()).replace(/-/g, '') + '.pdf';
-
-      function cleanup() {
-        document.body.removeChild(overlay);
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-      }
-
-      html2pdf().set({
-        margin: [24, 20, 24, 20],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1150, scrollX: 0, scrollY: 0 },
-        jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      }).from(wrapper).save().then(cleanup).catch(function (err) {
-        cleanup();
-        alert('Gagal membuat PDF: ' + (err && err.message ? err.message : err));
-      });
-    }
-
-    // ---------- Aset (DINONAKTIFKAN SEMENTARA) ----------
-    // Kolom 'Aset' sudah dikeluarkan dari CHANNEL_TABLE_COLUMNS, jadi fungsi
-    // di bawah tidak terpanggil. Dibiarkan supaya gampang diaktifkan lagi.
-
-    function renderAssetCell(r) {
-      if (r.previewUrl) {
-        return '<a href="' + escapeAttr(r.linkAset) + '" target="_blank" rel="noopener">' +
-          '<img class="thumb" src="' + escapeAttr(r.previewUrl) + '" data-link="' + escapeAttr(r.linkAset) + '" ' +
-          'onerror="handleAssetImgError(this, this.getAttribute(\'data-link\'))">' +
-          '</a>';
-      }
-      if (r.linkAset) {
-        return '<a class="asset-link-btn" href="' + escapeAttr(r.linkAset) + '" target="_blank" rel="noopener">Buka Aset</a>';
-      }
-      return '<span class="no-asset">—</span>';
-    }
-
-    function handleLogoError(imgEl) {
-      var mark = document.getElementById('topbarMark');
-      if (mark) {
-        mark.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<path d="M4 19V10"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path></svg>';
-      }
-    }
-
-    function handleAssetImgError(imgEl, link) {
-      var a = document.createElement('a');
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.href = link;
-      a.className = 'asset-link-btn';
-      a.textContent = 'Buka Aset';
-      imgEl.replaceWith(a);
-    }
-
-    // ---------- utils ----------
-
-    function escapeHtml(v) {
-      if (v === null || v === undefined) return '';
-      return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    function escapeAttr(v) {
-      if (v === null || v === undefined) return '';
-      return String(v).replace(/"/g, '&quot;');
-    }
-    function formatTanggal(iso) {
-      if (!iso) return '';
-      var parts = String(iso).split('-');
-      if (parts.length !== 3) return String(iso);
-      return parts[2] + '/' + parts[1] + '/' + parts[0];
-    }
-  </script>
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+  }
+
+  var pag = document.getElementById(key + '_pagination');
+  pag.innerHTML =
+    '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="prev"' + (page <= 1 ? ' disabled' : '') + '>Sebelumnya</button>' +
+    '<span class="page-info">Halaman ' + page + ' dari ' + totalPages + ' (' + rows.length + ' baris)</span>' +
+    '<button class="page-btn" data-channel="' + escapeAttr(channel) + '" data-dir="next"' + (page >= totalPages ? ' disabled' : '') + '>Berikutnya</button>';
+
+  pag.querySelectorAll('.page-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var ch = btn.getAttribute('data-channel');
+      var cur = channelPage[ch] || 1;
+      renderChannelPage(ch, btn.getAttribute('data-dir') === 'next' ? cur + 1 : cur - 1);
+    });
+  });
+}
+
+// ==================== SUMMARY (GROWTH PERIODE A vs B) ====================
+// Selalu Semua Kota, GA selalu non-kumulatif.
+var GROWTH_KPI_DEFS = [
+  { key: 'impressions', label: 'Impressions', kind: 'row' },
+  { key: 'eventCount', label: 'Event Count Website', kind: 'ga' },
+  { key: 'allUsers', label: 'Website Users', kind: 'ga' },
+  { key: 'waInbound', label: 'WA Inbound', kind: 'row' },
+  { key: 'registrationComplete', label: 'Registrations', kind: 'row' },
+  { key: 'potential', label: 'Tidak Tercover', kind: 'row' },
+  { key: 'covered', label: 'Covered', kind: 'row' },
+  { key: 'payment', label: 'Payment', kind: 'row' },
+  { key: 'activation', label: 'Activation', kind: 'row' }
+];
+
+var GROWTH_CHANNEL_COLS = [
+  { key: 'waInbound', label: 'WA Inbound', requires: ['WA Inbound'] },
+  { key: 'registrationComplete', label: 'Registrations', requires: ['Registration Complete'] },
+  { key: 'covered', label: 'Covered', requires: ['Covered'] },
+  { key: 'potential', label: 'Tidak Tercover', requires: ['Potential'] },
+  { key: 'payment', label: 'Payment', requires: ['Payment'] }
+];
+
+var GROWTH_CITY_COLS = [
+  { key: 'impressions', label: 'Impressions' },
+  { key: 'allUsers', label: 'Website Users' },
+  { key: 'waInbound', label: 'WA Inbound' },
+  { key: 'registrationComplete', label: 'Registrations' },
+  { key: 'covered', label: 'Covered' },
+  { key: 'potential', label: 'Tidak Tercover' },
+  { key: 'payment', label: 'Payment' }
+];
+
+function initSummaryDatesDefault(force) {
+  if (summaryDatesInitialized && !force) return;
+  summaryDatesInitialized = true;
+  var maxDate = '';
+  ALL_ROWS.forEach(function (r) { if (r.tanggal && r.tanggal > maxDate) maxDate = r.tanggal; });
+  if (!maxDate) maxDate = toISO(new Date());
+  var prevDate = addDaysISO(maxDate, -1);
+  document.getElementById('periodBFrom').value = maxDate;
+  document.getElementById('periodBTo').value = maxDate;
+  document.getElementById('periodAFrom').value = prevDate;
+  document.getElementById('periodATo').value = prevDate;
+}
+
+function filterRowsByRange(rows, from, to) {
+  return rows.filter(function (r) {
+    if (from && r.tanggal && r.tanggal < from) return false;
+    if (to && r.tanggal && r.tanggal > to) return false;
+    return true;
+  });
+}
+
+function formatRangeLabel(range) {
+  if (!range.from && !range.to) return 'Semua data';
+  if (range.from === range.to || !range.to) return formatTanggal(range.from);
+  if (!range.from) return 'sampai ' + formatTanggal(range.to);
+  return formatTanggal(range.from) + '–' + formatTanggal(range.to);
+}
+
+function pctChange(a, b) {
+  if (!a) {
+    if (!b) return { pct: 0, label: '0,0%', dir: 'flat' };
+    return { pct: null, label: 'n/a · basis nol', dir: 'up' };
+  }
+  var pct = (b - a) / a * 100;
+  var dir = pct > 0.05 ? 'up' : (pct < -0.05 ? 'down' : 'flat');
+  var arrow = dir === 'up' ? '↑ ' : (dir === 'down' ? '↓ ' : '');
+  return { pct: pct, label: arrow + Math.abs(pct).toFixed(1).replace('.', ',') + '%', dir: dir };
+}
+
+function deltaClass(dir) { return 'delta-' + dir; }
+
+function getSummaryPeriods() {
+  return {
+    a: { from: document.getElementById('periodAFrom').value, to: document.getElementById('periodATo').value },
+    b: { from: document.getElementById('periodBFrom').value, to: document.getElementById('periodBTo').value }
+  };
+}
+
+function renderGrowthSummary() {
+  var periods = getSummaryPeriods();
+  var rowsA = filterRowsByRange(ALL_ROWS, periods.a.from, periods.a.to);
+  var rowsB = filterRowsByRange(ALL_ROWS, periods.b.from, periods.b.to);
+  var gaA = filterRowsByRange(GA_ROWS, periods.a.from, periods.a.to);
+  var gaB = filterRowsByRange(GA_ROWS, periods.b.from, periods.b.to);
+  var gaTotalA = filterRowsByRange(GA_TOTAL_ROWS, periods.a.from, periods.a.to);
+  var gaTotalB = filterRowsByRange(GA_TOTAL_ROWS, periods.b.from, periods.b.to);
+
+  document.getElementById('growthScopeLabel').textContent =
+    'Data periode ' + formatRangeLabel(periods.b) + ' · dibandingkan dengan ' + formatRangeLabel(periods.a) + ' · Semua Kota';
+
+  var kpis = GROWTH_KPI_DEFS.map(function (def) {
+    var a = def.kind === 'ga' ? sum(gaTotalA, def.key) : sum(rowsA, def.key);
+    var b = def.kind === 'ga' ? sum(gaTotalB, def.key) : sum(rowsB, def.key);
+    return { key: def.key, label: def.label, a: a, b: b, delta: pctChange(a, b), ga: def.kind === 'ga' };
+  });
+
+  renderGrowthKpiCards(kpis);
+  renderGrowthChannelTable(rowsA, rowsB);
+  renderGrowthCityTable(rowsA, rowsB, gaA, gaB);
+}
+
+function renderGrowthKpiCards(kpis) {
+  var wrap = document.getElementById('growthKpiWrap');
+  wrap.className = 'summary-grid';
+
+  var cardsHtml = kpis.map(function (m) {
+    return '<div class="kpi-card' + (m.ga ? ' kpi-ga' : '') + '"><div class="kpi-label">' + escapeHtml(m.label) + '</div>' +
+      '<div class="kpi-value">' + fmtNum(m.b) + '</div>' +
+      '<div class="kpi-delta ' + deltaClass(m.delta.dir) + '">' + m.delta.label + '</div></div>';
+  }).join('');
+
+  var regis = kpis.filter(function (k) { return k.key === 'registrationComplete'; })[0];
+  var payment = kpis.filter(function (k) { return k.key === 'payment'; })[0];
+
+  function changeLine(label, item) {
+    if (item.delta.dir === 'flat') return label + ' tidak berubah (' + fmtNum(item.a) + ' → ' + fmtNum(item.b) + ')';
+    var verb = item.delta.dir === 'up' ? 'naik' : 'turun';
+    var pctText = item.delta.pct === null ? '' : ' ' + Math.abs(item.delta.pct).toFixed(1).replace('.', ',') + '%';
+    return label + ' ' + verb + pctText + ' (' + fmtNum(item.a) + ' → ' + fmtNum(item.b) + ')';
+  }
+
+  var keyChangesHtml = '<div class="kpi-card kpi-changes"><div class="kpi-label">Key Changes</div>' +
+    '<div class="kpi-changes-line ' + deltaClass(regis.delta.dir) + '">' + escapeHtml(changeLine('Registrasi', regis)) + '</div>' +
+    '<div class="kpi-changes-line ' + deltaClass(payment.delta.dir) + '">' + escapeHtml(changeLine('Payment', payment)) + '</div></div>';
+
+  wrap.innerHTML = cardsHtml + keyChangesHtml;
+}
+
+function cellStack(value, delta) {
+  return '<td class="cell-stack"><span class="cell-value">' + fmtNum(value) + '</span><span class="cell-delta ' + deltaClass(delta.dir) + '">' + delta.label + '</span></td>';
+}
+
+function renderGrowthChannelTable(rowsA, rowsB) {
+  var data = CHANNELS.map(function (channel) {
+    var chA = rowsA.filter(function (r) { return r.channel === channel; });
+    var chB = rowsB.filter(function (r) { return r.channel === channel; });
+    var cols = GROWTH_CHANNEL_COLS.map(function (def) {
+      if (!isMetricTracked(channel, def.requires)) return { tracked: false };
+      var a = sum(chA, def.key), b = sum(chB, def.key);
+      return { tracked: true, a: a, b: b, delta: pctChange(a, b) };
+    });
+    return { channel: channel, cols: cols };
+  });
+
+  var headHtml = '<tr><th>Channel</th>' + GROWTH_CHANNEL_COLS.map(function (def) {
+    return '<th class="num">' + escapeHtml(def.label) + '</th>';
+  }).join('') + '</tr>';
+
+  var bodyHtml = data.map(function (d) {
+    var cells = d.cols.map(function (c) {
+      if (!c.tracked) return '<td class="num"><span class="is-dash">–</span></td>';
+      return cellStack(c.b, c.delta);
+    }).join('');
+    return '<tr><td>' + escapeHtml(d.channel) + '</td>' + cells + '</tr>';
+  }).join('');
+
+  document.getElementById('growthChannelWrap').innerHTML =
+    '<div class="table-wrap"><table><thead>' + headHtml + '</thead><tbody>' + bodyHtml + '</tbody></table></div>';
+}
+
+function renderGrowthCityTable(rowsA, rowsB, gaA, gaB) {
+  var cityA = computeCityBreakdown(rowsA, gaByCityFromRows_(gaA));
+  var cityB = computeCityBreakdown(rowsB, gaByCityFromRows_(gaB));
+  var byKeyA = {};
+  cityA.forEach(function (c) { byKeyA[cityKey(c.kota)] = c; });
+
+  var headHtml = '<tr><th>Kota</th>' + GROWTH_CITY_COLS.map(function (def) {
+    return '<th class="num">' + escapeHtml(def.label) + '</th>';
+  }).join('') + '</tr>';
+
+  var bodyHtml = cityB.map(function (cB) {
+    var cA = byKeyA[cityKey(cB.kota)] || { impressions: 0, allUsers: 0, waInbound: 0, registrationComplete: 0, covered: 0, potential: 0, payment: 0, notCovered: 0 };
+    var cells = GROWTH_CITY_COLS.map(function (def) {
+      var aVal = def.key === 'potential' ? cA.notCovered : cA[def.key];
+      var bVal = def.key === 'potential' ? cB.notCovered : cB[def.key];
+      return cellStack(bVal || 0, pctChange(aVal || 0, bVal || 0));
+    }).join('');
+    return '<tr><td>' + escapeHtml(displayCityLabel(cB.kota)) + '</td>' + cells + '</tr>';
+  }).join('');
+
+  document.getElementById('growthCityWrap').innerHTML =
+    '<div class="table-wrap"><table><thead>' + headHtml + '</thead><tbody>' + bodyHtml + '</tbody></table></div>';
+}
+
+// ---------- Download PDF Summary ----------
+function handleSummaryPdfClick() {
+  if (typeof html2pdf === 'undefined') { alert('Library PDF belum siap dimuat, coba beberapa detik lagi.'); return; }
+
+  var btn = document.getElementById('summaryDownloadBtn');
+  var originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Menyiapkan PDF…';
+
+  var periods = getSummaryPeriods();
+  var scopeText = 'Data periode ' + formatRangeLabel(periods.b) + ' · dibandingkan dengan ' + formatRangeLabel(periods.a) + ' · Semua Kota';
+
+  var clone = document.getElementById('summaryView').cloneNode(true);
+  clone.style.display = 'block';
+  clone.removeAttribute('id');
+
+  var header = document.createElement('div');
+  header.style.marginBottom = '18px';
+  header.innerHTML =
+    '<div style="font-size:19px;margin:0 0 4px;color:#8E0E22;font-weight:800;">Growth Summary — Internet Rakyat</div>' +
+    '<div style="font-size:12.5px;color:#94959D;">' + escapeHtml(scopeText) + '</div>';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'pdfExportOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#ffffff;z-index:999999;overflow:auto;';
+
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'background:#ffffff;padding:26px;width:1150px;margin:0 auto;';
+  wrapper.appendChild(header);
+  wrapper.appendChild(clone);
+
+  overlay.appendChild(wrapper);
+  document.body.appendChild(overlay);
+
+  var fileName = 'Growth_Summary_' + toISO(new Date()).replace(/-/g, '') + '.pdf';
+
+  function cleanup() {
+    document.body.removeChild(overlay);
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+
+  html2pdf().set({
+    margin: [24, 20, 24, 20],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 1150, scrollX: 0, scrollY: 0 },
+    jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  }).from(wrapper).save().then(cleanup).catch(function (err) {
+    cleanup();
+    alert('Gagal membuat PDF: ' + (err && err.message ? err.message : err));
+  });
+}
+
+function handleLogoError(imgEl) {
+  var mark = document.getElementById('topbarMark');
+  if (mark) {
+    mark.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path></svg>';
+  }
+}
+
+// ---------- utils ----------
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function escapeAttr(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/"/g, '&quot;');
+}
+function formatTanggal(iso) {
+  if (!iso) return '';
+  var parts = String(iso).split('-');
+  if (parts.length !== 3) return String(iso);
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+</script>
 </body>
 </html>
