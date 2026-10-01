@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<base target="_top">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard Performance — 10 City Campaign Report IRA</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{--ira-red:#D2122E;--ira-red-dark:#8E0E22;--ira-red-light:#FBEEF0;--ira-red-soft:rgba(210,18,46,0.06);--gold:#B98B3E;--gold-light:#F8F1E1;--ink:#1F2024;--ink-soft:#52535A;--muted:#94959D;--border:#EDEBEC;--bg:#F5F3F5;--white:#FFFFFF;--shadow-sm:0 1px 2px rgba(31,32,36,0.05);--shadow-md:0 8px 22px rgba(142,14,34,0.07);--radius-lg:16px;--radius-md:12px;--radius-sm:8px;--sidebar-w:220px;--ga-blue:#2E6FDB;--ga-blue-dark:#1F4FA0;--ga-teal:#2AA79A}
 *{box-sizing:border-box}
@@ -314,7 +313,6 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbzG5oUb5EJxZr1CT5q7CuFjz2
 var API_KEY = '';
 
 // ==================== KONFIGURASI DARI SERVER ====================
-// Diisi otomatis dari response ?action=data (satu sumber config: Code.gs)
 var FUNNEL_METRICS = [];
 var CHANNEL_METRIC_CONFIG = {};
 var CHANNEL_DETAIL_COLUMNS = {};
@@ -325,6 +323,17 @@ var EXEC_SUMMARY_DEFS = [];
 var ROWS_PER_PAGE = 5;
 var CHANNELS = [];
 
+// Tebak penyebab kalau response bukan JSON
+function diagnoseNonJson_(t) {
+  if (/accounts\.google\.com|ServiceLogin|Sign in/i.test(t))
+    return 'Apps Script meminta login Google. Ubah "Who has access" menjadi "Anyone" (bukan "Anyone with Google account" / domain).';
+  if (/Dashboard Performance|Memuat data|userCodeAppPanel/.test(t))
+    return 'URL /exec masih menjalankan kode lama (belum ada handler ?action=). Deploy > Manage deployments > Edit > New version > Deploy.';
+  if (/Authorization|permission|izin|Exception|TypeError/i.test(t))
+    return 'Script error / izin belum disetujui. Jalankan getInitialData sekali dari editor Apps Script, setujui izin, lalu deploy versi baru.';
+  return 'Response dari Apps Script bukan JSON. Cek deployment: Execute as "Me", Who has access "Anyone", lalu deploy versi baru.';
+}
+
 function apiGet(action) {
   if (!API_URL) return Promise.reject(new Error('API_URL belum diisi di index.html.'));
   var url = API_URL + (API_URL.indexOf('?') === -1 ? '?' : '&') + 'action=' + encodeURIComponent(action);
@@ -334,7 +343,10 @@ function apiGet(action) {
     .then(function (text) {
       var json;
       try { json = JSON.parse(text); }
-      catch (e) { throw new Error('Response dari Apps Script bukan JSON. Cek deployment: Execute as "Me", Who has access "Anyone", lalu deploy versi baru.'); }
+      catch (e) {
+        console.log('Response mentah dari Apps Script:', text.slice(0, 600));
+        throw new Error(diagnoseNonJson_(text));
+      }
       if (!json.ok) throw new Error(json.error || 'Terjadi kesalahan di server.');
       return json.data;
     });
@@ -390,10 +402,10 @@ var RANK_COLOR_START = [193, 20, 47];
 var RANK_COLOR_END = [250, 227, 231];
 
 var ALL_ROWS = [];
-var GA_ROWS = [];             // A-E  harian non-kumulatif per kota
-var GA_TOTAL_ROWS = [];       // G-I  harian non-kumulatif total
-var GA_CUM_TOTAL_ROWS = [];   // K-M  kumulatif total
-var GA_CUM_CITY_ROWS = [];    // O-S  kumulatif per kota
+var GA_ROWS = [];
+var GA_TOTAL_ROWS = [];
+var GA_CUM_TOTAL_ROWS = [];
+var GA_CUM_CITY_ROWS = [];
 var PAYMENT_DETAIL_ROWS = [];
 var CITY_LIST = [];
 var currentView = 'all';
@@ -454,7 +466,20 @@ function onLoadError(err) {
   document.getElementById('loading').style.display = 'none';
   var box = document.getElementById('errorBox');
   box.style.display = 'block';
-  box.textContent = 'Gagal memuat data: ' + (err && err.message ? err.message : err);
+  box.innerHTML = '';
+  var msg = document.createElement('div');
+  msg.textContent = 'Gagal memuat data: ' + (err && err.message ? err.message : err);
+  var btn = document.createElement('button');
+  btn.className = 'reset-btn';
+  btn.style.marginTop = '12px';
+  btn.textContent = 'Coba lagi';
+  btn.onclick = function () {
+    box.style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    apiGet('data').then(onDataLoaded).catch(onLoadError);
+  };
+  box.appendChild(msg);
+  box.appendChild(btn);
 }
 
 function onDataLoaded(data) {
